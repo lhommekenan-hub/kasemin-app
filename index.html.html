@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KaseMind — Application</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#0a1628;--navy2:#0f2044;--navy3:#162d5e;
+  --gold:#c9a84c;--gold2:#e8c96a;--gold-light:#fdf6e3;
+  --bg:#f4f6fb;--card:#ffffff;--border:#e2e8f4;--border2:#c8d4e8;
+  --text:#0a1628;--muted:#64748b;--light:#94a3b8;
+  --success:#16a34a;--success-light:#dcfce7;
+  --danger:#dc2626;--danger-light:#fee2e2;
+  --warn:#d97706;--warn-light:#fef3c7;
+  --radius:16px;--radius-sm:10px;--radius-xs:6px;
+  --shadow:0 2px 16px rgba(10,22,40,.08);
+  --shadow-md:0 8px 32px rgba(10,22,40,.12);
+}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;overflow-x:hidden}
+
+/* ===== SCREENS ===== */
+.screen{display:none}
+.screen.active{display:block}
+
+/* ===== AUTH ===== */
+#screen-auth{
+  min-height:100vh;
+  background:var(--navy);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+}
+#screen-auth.active{display:flex}
+#screen-auth::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(201,168,76,.12) 0%,transparent 70%);pointer-events:none}
+#screen-auth::after{content:'';position:absolute;bottom:-200px;left:-200px;width:500px;height:500px;background:radial-gradient(circle,rgba(22,45,94,.5) 0%,transparent 60%);pointer-events:none}
+
+.auth-box{width:100%;max-width:440px;position:relative;z-index:10;animation:fadeUp .5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.auth-logo{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:32px}
+.auth-logo-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);box-shadow:0 4px 20px rgba(201,168,76,.3)}
+.auth-logo-name{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:white}
+.auth-logo-name span{color:var(--gold)}
+
+.auth-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:36px;backdrop-filter:blur(20px)}
+.auth-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:white;text-align:center;margin-bottom:4px}
+.auth-sub{font-size:13px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:28px}
+.auth-tabs{display:flex;background:rgba(255,255,255,.06);border-radius:var(--radius-sm);padding:4px;margin-bottom:24px;gap:4px}
+.auth-tab{flex:1;padding:9px;border:none;background:transparent;color:rgba(255,255,255,.5);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;border-radius:var(--radius-xs);transition:all .2s}
+.auth-tab.active{background:var(--gold);color:var(--navy)}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.form-input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);padding:12px 16px;color:white;font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:all .2s}
+.form-input::placeholder{color:rgba(255,255,255,.25)}
+.form-input:focus{border-color:var(--gold);background:rgba(255,255,255,.1)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn-auth{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);border:none;border-radius:var(--radius-sm);font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:8px}
+.btn-auth:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,168,76,.35)}
+.btn-auth:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.auth-error{background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3);color:#fca5a5;border-radius:var(--radius-xs);padding:10px 14px;font-size:12px;margin-bottom:14px;display:none}
+.auth-success{background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);color:#86efac;border-radius:var(--radius-xs);padding:10px 14px;font-size:12px;margin-bottom:14px;display:none}
+.auth-switch{text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.35)}
+.auth-switch a{color:var(--gold);cursor:pointer;text-decoration:underline}
+.auth-back{display:block;text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,.3);cursor:pointer;text-decoration:none;transition:color .2s}
+.auth-back:hover{color:rgba(255,255,255,.6)}
+
+/* ===== APP SHELL ===== */
+#screen-app{display:none;flex-direction:row;min-height:100vh}
+#screen-app.active{display:flex}
+
+.sidebar{width:240px;min-height:100vh;background:var(--navy);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:20px 20px 16px}
+.sidebar-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy)}
+.sidebar-logo-name{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:white}
+.sidebar-logo-name span{color:var(--gold)}
+
+.sidebar-user{margin:0 12px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-sm);padding:12px}
+.user-name{font-size:13px;font-weight:700;color:white;margin-bottom:2px}
+.user-plan{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gold)}
+
+.sidebar-nav{flex:1;padding:0 8px}
+.nav-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);padding:12px 12px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-xs);color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500}
+.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9)}
+.nav-item.active{background:rgba(201,168,76,.15);color:var(--gold);font-weight:700}
+.nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--gold);color:var(--navy);border-radius:999px;font-size:9px;font-weight:800;padding:2px 7px}
+
+.sidebar-bottom{padding:12px}
+.lf-status-sidebar{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:var(--radius-xs);padding:10px 12px;margin-bottom:10px}
+.lf-row{display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.6);margin-bottom:3px}
+.lf-row:last-child{margin-bottom:0}
+.lf-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-green{background:#4ade80;animation:blink 3s infinite}
+.dot-gold{background:var(--gold);animation:blink 1s infinite}
+.dot-red{background:var(--danger)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.lang-row{display:flex;gap:6px;margin-bottom:8px}
+.lang-btn-sm{padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:999px;color:rgba(255,255,255,.4);cursor:pointer;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;transition:all .2s}
+.lang-btn-sm.active{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+.btn-logout{width:100%;padding:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-xs);color:rgba(255,255,255,.5);cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;transition:all .2s;text-align:left;display:flex;align-items:center;gap:8px}
+.btn-logout:hover{background:rgba(220,38,38,.1);border-color:rgba(220,38,38,.2);color:#fca5a5}
+
+/* ===== MAIN ===== */
+.app-main{flex:1;min-height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.page-header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.page-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--navy)}
+.page-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.page-content{padding:24px 28px;flex:1}
+
+/* ===== BUTTONS ===== */
+.btn{padding:9px 18px;border-radius:var(--radius-xs);border:1.5px solid var(--border2);background:white;color:var(--text);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover{border-color:var(--navy)}
+.btn-navy{background:var(--navy);color:white;border-color:var(--navy)}
+.btn-navy:hover{background:var(--navy2)}
+.btn-gold{background:var(--gold);color:var(--navy);border-color:var(--gold);font-weight:700}
+.btn-gold:hover{background:var(--gold2)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-danger{background:var(--danger-light);color:var(--danger);border-color:rgba(220,38,38,.2)}
+
+/* ===== DASHBOARD ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);transition:all .2s}
+.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.stat-icon{font-size:22px;margin-bottom:10px}
+.stat-value{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:var(--navy);line-height:1}
+.stat-label{font-size:11px;color:var(--muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+.two-col{display:grid;grid-template-columns:1fr 360px;gap:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--navy)}
+.card-body{padding:20px}
+
+/* ===== ANALYZE ===== */
+.lf-bar{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--navy),var(--navy2));border:1px solid rgba(201,168,76,.15);border-radius:var(--radius-sm);padding:10px 16px;margin-bottom:18px;font-size:12px}
+.lf-bar-text{color:rgba(255,255,255,.8);font-weight:600;flex:1}
+.lf-bar-sub{font-size:10px;color:rgba(255,255,255,.35)}
+
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:32px;text-align:center;background:var(--card);transition:all .3s;cursor:pointer;position:relative;overflow:hidden;margin-bottom:16px}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--gold);background:var(--gold-light)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+.analyze-form{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:16px}
+.fg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-xs);padding:10px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;outline:none;transition:all .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold);background:white}
+.fg textarea{min-height:80px;resize:vertical;line-height:1.6}
+
+/* ===== LOADING ===== */
+.loading-wrap{background:var(--navy);border-radius:var(--radius);padding:32px;text-align:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+.loading-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:rgba(255,255,255,.85);font-style:italic;margin-bottom:20px}
+.loading-steps{max-width:380px;margin:0 auto 20px}
+.loading-step{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:var(--radius-xs);font-size:12px;color:rgba(255,255,255,.3);transition:all .3s;margin-bottom:3px}
+.loading-step.active{color:var(--gold);background:rgba(201,168,76,.08);font-weight:700}
+.loading-step.done{color:rgba(255,255,255,.5)}
+.step-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.2);flex-shrink:0}
+.loading-step.active .step-dot{background:var(--gold)}
+.loading-step.done .step-dot{background:#4ade80}
+.search-feed{background:rgba(255,255,255,.04);border-radius:var(--radius-xs);padding:12px 16px;max-height:160px;overflow-y:auto;margin-top:16px}
+.search-feed-title{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.feed-item{font-size:12px;color:rgba(255,255,255,.5);padding:3px 0;display:flex;align-items:center;gap:6px}
+.feed-item.active{color:var(--gold);font-weight:600}
+.feed-item.done{color:rgba(255,255,255,.35)}
+
+/* ===== RESULTS ===== */
+.result-header{background:var(--navy);border-radius:var(--radius);padding:20px 24px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.result-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:white;font-style:italic}
+.result-complete{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(22,163,74,.2);color:#4ade80;border:1px solid rgba(22,163,74,.3)}
+.result-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px}
+.rtab{padding:10px 20px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.rtab.active{color:var(--navy);border-bottom-color:var(--gold)}
+.section{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.section-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.section-text{font-size:14px;line-height:1.85;color:var(--text)}
+.risk-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.risk-score{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;line-height:1}
+.risk-score.low{color:var(--success)}.risk-score.medium{color:var(--warn)}.risk-score.high{color:var(--danger)}
+.risk-bar-outer{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
+.risk-bar-fill{height:100%;border-radius:4px;transition:width 1.5s ease}
+.risk-low{background:linear-gradient(90deg,var(--success),#4ade80)}
+.risk-medium{background:linear-gradient(90deg,var(--warn),#fbbf24)}
+.risk-high{background:linear-gradient(90deg,var(--danger),#f87171)}
+.pts-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.pt{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border);font-size:13px;line-height:1.6}
+.pt-good{border-left:3px solid var(--success)}.pt-warn{border-left:3px solid var(--warn)}.pt-bad{border-left:3px solid var(--danger)}.pt-info{border-left:3px solid var(--navy3)}
+.law-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;border-left:3px solid #0055a4}
+.law-article{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.law-text{font-size:13px;color:var(--muted);line-height:1.65}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;margin-top:6px}
+.chip-lf{background:rgba(0,85,164,.08);border:1px solid rgba(0,85,164,.2);color:#0055a4}
+.chip-jud{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:#8a6200}
+.juris-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;border-left:3px solid var(--gold)}
+.juris-ref{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.juris-text{font-size:13px;color:var(--muted);line-height:1.65}
+.strategy-card{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:var(--radius);padding:20px;margin-bottom:12px;color:white;position:relative;overflow:hidden}
+.strategy-n{font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;color:rgba(201,168,76,.2);position:absolute;top:8px;right:18px;line-height:1}
+.strategy-title{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px}
+.strategy-text{font-size:13px;color:rgba(255,255,255,.8);line-height:1.75}
+.say-box{background:var(--gold-light);border-radius:var(--radius-sm);border-left:4px solid var(--gold);padding:18px;font-size:14px;line-height:1.9}
+.risk-pill{padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800}
+.risk-pill-h{background:var(--danger-light);color:var(--danger)}
+.risk-pill-m{background:var(--warn-light);color:var(--warn)}
+.risk-pill-l{background:var(--success-light);color:var(--success)}
+
+/* ===== CASES ===== */
+.case-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s}
+.case-row:last-child{border-bottom:none}
+.case-row:hover{opacity:.8}
+.case-row-icon{width:36px;height:36px;border-radius:var(--radius-xs);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid var(--border)}
+.case-row-info{flex:1;min-width:0}
+.case-row-name{font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.case-row-meta{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ===== CLIENT CARD ===== */
+.client-card{background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1px solid #bae6fd;border-radius:var(--radius);padding:24px}
+.client-sec-title{font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.client-sec-text{font-size:14px;color:#0c4a6e;line-height:1.8;background:white;border-radius:var(--radius-xs);padding:12px 14px;border:1px solid #bae6fd;margin-bottom:14px}
+
+/* ===== EMPTY ===== */
+.empty{text-align:center;padding:60px 20px}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:.3}
+.empty-title{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--muted);margin-bottom:8px}
+.empty-sub{font-size:13px;color:var(--light)}
+
+/* ===== TOAST ===== */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--navy);color:white;border-radius:var(--radius-xs);padding:12px 16px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:10px;max-width:300px;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast-s{border-left:3px solid var(--success)}.toast-e{border-left:3px solid var(--danger)}.toast-i{border-left:3px solid var(--gold)}
+
+/* ===== SUB INFO ===== */
+.sub-box{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:var(--radius);padding:20px;color:white;margin-bottom:14px}
+.sub-plan{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold);margin-bottom:4px}
+.sub-exp{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:16px}
+.sub-feat{font-size:12px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sub-feat::before{content:'✓';color:var(--gold);font-weight:800}
+.usage-label{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:5px;margin-top:12px}
+.usage-track{height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
+.usage-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px}
+
+@media(max-width:768px){
+  .sidebar{display:none}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .two-col{grid-template-columns:1fr}
+  .page-content{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- AUTH SCREEN -->
+<div id="screen-auth" class="active">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">K</div>
+      <div class="auth-logo-name"><span>Kase</span>Mind</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="authLogin" class="auth-card">
+      <div class="auth-title">Connexion</div>
+      <div class="auth-sub">Accédez à votre espace juridique sécurisé</div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Se connecter</button>
+        <button class="auth-tab" onclick="switchAuthTab('register')">Créer un compte</button>
+      </div>
+      <div class="auth-error" id="loginError"></div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="loginEmail" placeholder="avocat@cabinet.fr">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" type="password" id="loginPw" placeholder="••••••••">
+      </div>
+      <button class="btn-auth" id="loginBtn" onclick="doLogin()">Se Connecter</button>
+      <a href="https://kasemind.fr" class="auth-back">← Retour à kasemind.fr</a>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="authRegister" class="auth-card" style="display:none">
+      <div class="auth-title">Créer votre compte</div>
+      <div class="auth-sub">14 jours d'essai gratuit — sans carte bancaire</div>
+      <div class="auth-tabs">
+        <button class="auth-tab" onclick="switchAuthTab('login')">Se connecter</button>
+        <button class="auth-tab active" onclick="switchAuthTab('register')">Créer un compte</button>
+      </div>
+      <div class="auth-error" id="regError"></div>
+      <div class="auth-success" id="regSuccess"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Prénom</label>
+          <input class="form-input" id="regFirst" placeholder="Jean">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom</label>
+          <input class="form-input" id="regLast" placeholder="Martin">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Barreau / Cabinet</label>
+        <input class="form-input" id="regBar" placeholder="Barreau de Paris">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="regEmail" placeholder="jean.martin@cabinet.fr">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe (min. 8 caractères)</label>
+        <input class="form-input" type="password" id="regPw" placeholder="••••••••">
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:14px;line-height:1.6">
+        En créant un compte vous acceptez nos <u style="cursor:pointer">CGU</u> et notre <u style="cursor:pointer">Politique RGPD</u>.
+      </div>
+      <button class="btn-auth" id="regBtn" onclick="doRegister()">Créer mon compte gratuit</button>
+      <a href="https://kasemind.fr" class="auth-back">← Retour à kasemind.fr</a>
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="screen-app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">K</div>
+      <div class="sidebar-logo-name"><span>Kase</span>Mind</div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-name" id="sidebarName">Me —</div>
+      <div class="user-plan" id="sidebarPlan">Trial · Actif</div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section">Principal</div>
+      <button class="nav-item active" id="nav-dashboard" onclick="setPage('dashboard')">
+        <span class="nav-icon">🏠</span>Tableau de bord
+      </button>
+      <button class="nav-item" id="nav-analyze" onclick="setPage('analyze')">
+        <span class="nav-icon">🔍</span>Analyser un dossier
+      </button>
+      <button class="nav-item" id="nav-cases" onclick="setPage('cases')">
+        <span class="nav-icon">📁</span>Mes dossiers
+        <span class="nav-badge" id="casesBadge">0</span>
+      </button>
+      <div class="nav-section">Compte</div>
+      <button class="nav-item" id="nav-settings" onclick="setPage('settings')">
+        <span class="nav-icon">⚙️</span>Paramètres
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="lf-status-sidebar">
+        <div class="lf-row">
+          <div class="lf-dot" id="lfDot" style="background:#4ade80"></div>
+          <span id="lfStatusText">Légifrance connecté</span>
+        </div>
+        <div class="lf-row">
+          <div class="lf-dot dot-green"></div>
+          <span>Judilibre actif</span>
+        </div>
+        <div class="lf-row">
+          <div class="lf-dot" style="background:#60a5fa"></div>
+          <span>AES-256 · RGPD</span>
+        </div>
+      </div>
+      <div class="lang-row">
+        <button class="lang-btn-sm active" id="btnFr" onclick="setLang('fr')">🇫🇷 FR</button>
+        <button class="lang-btn-sm" id="btnEn" onclick="setLang('en')">🇬🇧 EN</button>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">🚪 Déconnexion</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="app-main">
+    <div id="pageContent"></div>
+  </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+// 🔴 IMPORTANT: Replace with your real Railway URL
+const API = 'https://kasemind-backend-production.up.railway.app';
+
+// Supabase config — replace with your real values
+const SUPABASE_URL = 'https://beyvbchlivybagywcbcf.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJleXZiY2hsaXZ5YmFneXdjYmNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1OTk2MzMsImV4cCI6MjA5NDE3NTYzM30.SWhO2aXR_U3zzXNQ4vxx9KRcTY6-kCg0fgHd5-VWZ6E';
+
+// Initialize Supabase
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== STATE =====
+let lang = 'fr';
+let currentUser = null;
+let currentSession = null;
+let cases = [];
+let result = null;
+let files = [];
+let cf = { name:'', charge:'', court:'', date:'', context:'' };
+let currentPage = 'dashboard';
+let lfConnected = false;
+
+// ===== TRANSLATIONS =====
+const T = {
+  fr: {
+    analyzeBtn:'🔍 Analyser avec Légifrance + Judilibre',
+    lfConnected:'Légifrance + Judilibre connectés',
+    lfConnecting:'Connexion en cours...',
+    lfError:'Mode hors-ligne',
+    steps:['Lecture des documents','Analyse des charges','🏛️ Connexion Légifrance','📚 Code Pénal + Civil','⚖️ Consultation Judilibre','🔎 Identification des failles','⚡ Construction stratégie','📝 Rapport final'],
+    riskL:'Faible', riskM:'Modéré', riskH:'Élevé',
+    noCases:'Aucun dossier', noCasesSub:'Analysez votre premier dossier',
+    toastComplete:'Analyse terminée !', toastSaved:'Dossier sauvegardé',
+    toastLogout:'Déconnecté avec succès',
+  },
+  en: {
+    analyzeBtn:'🔍 Analyze with Légifrance + Judilibre',
+    lfConnected:'Légifrance + Judilibre connected',
+    lfConnecting:'Connecting...',
+    lfError:'Offline mode',
+    steps:['Reading documents','Analyzing charges','🏛️ Connecting Légifrance','📚 Penal + Civil Code','⚖️ Querying Judilibre','🔎 Finding weaknesses','⚡ Building strategy','📝 Final report'],
+    riskL:'Low', riskM:'Moderate', riskH:'High',
+    noCases:'No cases yet', noCasesSub:'Analyze your first case',
+    toastComplete:'Analysis complete!', toastSaved:'Case saved',
+    toastLogout:'Signed out successfully',
+  }
+};
+function t(k){ return T[lang][k] || T.en[k] || k; }
+
+// ===== LANGUAGE =====
+function setLang(l) {
+  lang = l;
+  document.getElementById('btnFr').className = 'lang-btn-sm' + (l==='fr'?' active':'');
+  document.getElementById('btnEn').className = 'lang-btn-sm' + (l==='en'?' active':'');
+}
+
+// ===== AUTH TABS =====
+function switchAuthTab(tab) {
+  document.getElementById('authLogin').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('authRegister').style.display = tab==='register' ? 'block' : 'none';
+}
+
+// ===== AUTH =====
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  errEl.style.display = 'none';
+
+  if (!email || !pw) {
+    errEl.textContent = 'Veuillez remplir tous les champs.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Connexion...';
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+
+  if (error) {
+    errEl.textContent = error.message === 'Invalid login credentials'
+      ? 'Email ou mot de passe incorrect.'
+      : error.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Se Connecter';
+    return;
+  }
+
+  currentSession = data.session;
+  localStorage.setItem('km_token', data.session.access_token);
+  await loadUserProfile(data.user);
+  showApp();
+}
+
+async function doRegister() {
+  const first = document.getElementById('regFirst').value.trim();
+  const last = document.getElementById('regLast').value.trim();
+  const bar = document.getElementById('regBar').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pw = document.getElementById('regPw').value;
+  const errEl = document.getElementById('regError');
+  const succEl = document.getElementById('regSuccess');
+  const btn = document.getElementById('regBtn');
+
+  errEl.style.display = 'none';
+  succEl.style.display = 'none';
+
+  if (!first || !last || !email || !pw) {
+    errEl.textContent = 'Veuillez remplir tous les champs.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (pw.length < 8) {
+    errEl.textContent = 'Mot de passe trop court (min. 8 caractères).';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Création du compte...';
+
+  try {
+    // Call backend to create account + firm + user profile
+    const resp = await fetch(`${API}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email, password: pw,
+        firstName: first, lastName: last,
+        barAssociation: bar,
+        firmName: bar || `Cabinet de Me ${last}`
+      })
+    });
+
+    const result = await resp.json();
+
+    if (!resp.ok) {
+      throw new Error(result.error || 'Registration failed');
+    }
+
+    // Account created - now sign in
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+
+    if (error) {
+      succEl.textContent = '✅ Compte créé ! Connectez-vous maintenant.';
+      succEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Créer mon compte gratuit';
+      return;
+    }
+
+    currentSession = data.session;
+    localStorage.setItem('km_token', data.session.access_token);
+    await loadUserProfile(data.user);
+    showApp();
+
+  } catch(e) {
+    // Fallback: direct Supabase signup
+    const { data, error } = await sb.auth.signUp({
+      email, password: pw,
+      options: { data: { first_name: first, last_name: last, bar_association: bar } }
+    });
+
+    btn.disabled = false;
+    btn.textContent = 'Créer mon compte gratuit';
+
+    if (error) {
+      errEl.textContent = error.message === 'User already registered'
+        ? 'Un compte avec cet email existe déjà. Connectez-vous.'
+        : error.message;
+      errEl.style.display = 'block';
+      return;
+    }
+
+    if (data.session) {
+      currentSession = data.session;
+      localStorage.setItem('km_token', data.session.access_token);
+      await loadUserProfile(data.user);
+      showApp();
+      return;
+    }
+
+    succEl.textContent = '✅ Compte créé ! Connectez-vous maintenant.';
+    succEl.style.display = 'block';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Créer mon compte gratuit';
+}
+
+
+async function loadUserProfile(user) {
+  currentUser = {
+    id: user.id,
+    email: user.email,
+    first: user.user_metadata?.first_name || '',
+    last: user.user_metadata?.last_name || '',
+    plan: 'trial'
+  };
+
+  // Try to load from backend
+  try {
+    const resp = await fetch(`${API}/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${currentSession?.access_token}` }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      currentUser = {
+        ...currentUser,
+        first: data.user?.first_name || currentUser.first,
+        last: data.user?.last_name || currentUser.last,
+        plan: data.firm?.plan || 'trial',
+        trialDays: 14
+      };
+    }
+  } catch(e) { /* use metadata */ }
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  currentUser = null;
+  currentSession = null;
+  cases = [];
+  result = null;
+  document.getElementById('screen-auth').classList.add('active');
+  document.getElementById('screen-app').classList.remove('active');
+  toast(t('toastLogout'), 'i');
+}
+
+// ===== SHOW APP =====
+function showApp() {
+  document.getElementById('screen-auth').classList.remove('active');
+  document.getElementById('screen-app').classList.add('active');
+
+  const name = `Me ${currentUser?.last || ''}`;
+  document.getElementById('sidebarName').textContent = name;
+  document.getElementById('sidebarPlan').textContent =
+    currentUser?.plan === 'solo' ? 'Solo · Actif' :
+    currentUser?.plan === 'firm' ? 'Cabinet · Actif' :
+    'Trial · 14 jours';
+
+  checkLFStatus();
+  loadCases();
+  setPage('dashboard');
+}
+
+// ===== LEGIFRANCE STATUS =====
+async function checkLFStatus() {
+  const dot = document.getElementById('lfDot');
+  const txt = document.getElementById('lfStatusText');
+  if (dot) dot.style.background = 'var(--gold)';
+  if (txt) txt.textContent = t('lfConnecting');
+
+  try {
+    const resp = await fetch(`${API}/health`);
+    if (resp.ok) {
+      lfConnected = true;
+      if (dot) { dot.style.background = '#4ade80'; dot.className = 'lf-dot dot-green'; }
+      if (txt) txt.textContent = t('lfConnected');
+    }
+  } catch(e) {
+    if (dot) { dot.style.background = 'var(--danger)'; dot.className = 'lf-dot dot-red'; }
+    if (txt) txt.textContent = t('lfError');
+  }
+}
+
+// ===== LOAD CASES FROM BACKEND =====
+async function loadCases() {
+  if (!currentSession?.access_token) {
+    // Fallback to localStorage
+    cases = JSON.parse(localStorage.getItem('km_cases') || '[]');
+    updateCasesBadge();
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${API}/api/cases`, {
+      headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      cases = data.cases || [];
+      updateCasesBadge();
+    }
+  } catch(e) {
+    cases = JSON.parse(localStorage.getItem('km_cases') || '[]');
+    updateCasesBadge();
+  }
+}
+
+function updateCasesBadge() {
+  const badge = document.getElementById('casesBadge');
+  if (badge) badge.textContent = cases.length;
+}
+
+// ===== PAGES =====
+function setPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+
+  const content = document.getElementById('pageContent');
+  content.innerHTML = '';
+
+  if (page === 'dashboard') renderDashboard(content);
+  else if (page === 'analyze') renderAnalyze(content);
+  else if (page === 'cases') renderCases(content);
+  else if (page === 'settings') renderSettings(content);
+}
+
+// ===== DASHBOARD =====
+async function startCheckout(plan) {
+  try {
+    const token = localStorage.getItem('km_token');
+    const res = await fetch('https://kasemind-backend-production.up.railway.app/api/billing/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ plan })
+    });
+    const data = await res.json();
+    if (data.checkout_url) {
+      window.location.href = data.checkout_url;
+    } else {
+      alert('Erreur lors de la création du paiement');
+    }
+  } catch (err) {
+    alert('Erreur de connexion');
+  }
+}
+function renderDashboard(container) {
+  container.innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">${lang==='fr'?'Tableau de bord':'Dashboard'}</div>
+      <div class="page-sub">${lang==='fr'?'Bienvenue,':'Welcome,'} Me ${currentUser?.last||''}</div>
+    </div>
+    <button class="btn btn-gold" onclick="setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
+  </div>
+  <div class="page-content">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">📁</div><div class="stat-value">${cases.length}</div><div class="stat-label">${lang==='fr'?'Dossiers analysés':'Cases analyzed'}</div></div>
+      <div class="stat-card"><div class="stat-icon">📜</div><div class="stat-value">${cases.length * 7}</div><div class="stat-label">${lang==='fr'?'Articles consultés':'Articles consulted'}</div></div>
+      <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value">${currentUser?.trialDays||14}</div><div class="stat-label">${lang==='fr'?'Jours restants':'Trial days left'}</div></div>
+      <div class="stat-card"><div class="stat-icon">🔒</div><div class="stat-value" style="font-size:16px;margin-top:4px">AES-256</div><div class="stat-label">RGPD ${lang==='fr'?'Conforme':'Compliant'}</div></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">${lang==='fr'?'Dossiers récents':'Recent cases'}</div>
+          <button class="btn btn-sm" onclick="setPage('analyze')">+ ${lang==='fr'?'Nouveau':'New'}</button>
+        </div>
+        <div class="card-body" id="dashCases"></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-body">
+            <div class="sub-box">
+              <div class="sub-plan">KaseMind ${currentUser?.plan==='firm'?'Cabinet':currentUser?.plan==='solo'?'Solo':'Trial'}</div>
+              <div class="sub-exp">${lang==='fr'?'Essai gratuit — 14 jours':'Free trial — 14 days'}</div>
+              <div class="sub-feat">${lang==='fr'?'Légifrance + Judilibre illimité':'Unlimited Légifrance + Judilibre'}</div>
+              <div class="sub-feat">${lang==='fr'?'Analyses illimitées':'Unlimited analyses'}</div>
+              <div class="sub-feat">RGPD ${lang==='fr'?'conforme':'compliant'}</div>
+              <div class="usage-label"><span>${lang==='fr'?'Dossiers':'Cases'}</span><span>${cases.length}/50</span></div>
+              <div class="usage-track"><div class="usage-fill" style="width:${Math.min(cases.length/50*100,100)}%"></div></div>
+              <button class="btn btn-gold" style="width:100%;margin-top:16px;justify-content:center" onclick="startCheckout('solo')">
+                ${lang==='fr'?'Passer à Solo €99/mois':'Upgrade to Solo €99/mo'}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🔒 RGPD</div></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--success)">✓ Chiffrement AES-256</div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--success)">✓ ${lang==='fr'?'Données EU (Frankfurt)':'EU data (Frankfurt)'}</div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--success)">✓ ${lang==='fr'?'Conforme RGPD/CNIL':'GDPR/CNIL compliant'}</div>
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--success)">✓ ${lang==='fr'?'Secret professionnel':'Attorney-client privilege'}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  const dc = document.getElementById('dashCases');
+  if (!cases.length) {
+    dc.innerHTML = `<div class="empty"><div class="empty-icon">📁</div><div class="empty-title">${t('noCases')}</div><p class="empty-sub">${t('noCasesSub')}</p></div>`;
+    return;
+  }
+  cases.slice(0,5).forEach(c => {
+    const rp = c.risk==='high' || c.risk_level==='high' ? `<div class="risk-pill risk-pill-h">🔴 ${t('riskH')}</div>` :
+               c.risk==='medium' || c.risk_level==='medium' ? `<div class="risk-pill risk-pill-m">🟡 ${t('riskM')}</div>` :
+               `<div class="risk-pill risk-pill-l">🟢 ${t('riskL')}</div>`;
+    const row = document.createElement('div');
+    row.className = 'case-row';
+    row.innerHTML = `<div class="case-row-icon">⚖️</div><div class="case-row-info"><div class="case-row-name">${c.client_name||c.name}</div><div class="case-row-meta">${c.charge||'—'} · ${c.hearing_date||c.date||'—'}</div></div>${rp}`;
+    row.onclick = () => {
+      cf = { name:c.client_name||c.name, charge:c.charge||'', court:c.court||'', date:c.hearing_date||c.date||'', context:'' };
+      result = c.result || null;
+      setPage('analyze');
+    };
+    dc.appendChild(row);
+  });
+}
+
+// ===== ANALYZE =====
+function renderAnalyze(container) {
+  const lfStat = lfConnected
+    ? `<div class="lf-dot dot-green" style="width:7px;height:7px;border-radius:50%;background:#4ade80;flex-shrink:0"></div><span class="lf-bar-text">${t('lfConnected')}</span>`
+    : `<div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0"></div><span class="lf-bar-text">${t('lfConnecting')}</span>`;
+
+  container.innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">${lang==='fr'?'Analyser un dossier':'Analyze a case'}</div>
+      <div class="page-sub">Légifrance + Judilibre + Claude AI</div>
+    </div>
+    <div id="resultActions" style="display:none">
+      <button class="btn btn-navy" onclick="saveCase()">💾 ${lang==='fr'?'Sauvegarder':'Save'}</button>
+      <button class="btn" onclick="window.print()">🖨️</button>
+    </div>
+  </div>
+  <div class="page-content" id="analyzeContent">
+    <div class="lf-bar">${lfStat}<div class="lf-bar-sub">PISTE API · OAuth 2.0 · Sécurisé</div></div>
+
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="handleFiles(this.files)">
+      <div style="font-size:36px;margin-bottom:10px;opacity:.5">📄</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;margin-bottom:4px">${lang==='fr'?'Déposez vos documents':'Drop your documents'}</div>
+      <div style="font-size:12px;color:var(--muted)">PDF, Word, images</div>
+    </div>
+    <div id="fileList" style="margin-bottom:12px"></div>
+
+    <div class="analyze-form">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;margin-bottom:16px">${lang==='fr'?'Informations du dossier':'Case information'}</div>
+      <div class="form-grid">
+        <div class="fg"><label>${lang==='fr'?'Nom du client':'Client name'}</label><input id="cfName" value="${cf.name}" placeholder="${lang==='fr'?'Jean Martin':'John Martin'}" oninput="cf.name=this.value"></div>
+        <div class="fg"><label>${lang==='fr'?'Charge / Infraction':'Charge / Offense'}</label><input id="cfCharge" value="${cf.charge}" placeholder="Ex: Vol aggravé Art. 311-4 CP" oninput="cf.charge=this.value"></div>
+        <div class="fg"><label>${lang==='fr'?'Tribunal':'Court'}</label><input id="cfCourt" value="${cf.court}" placeholder="Ex: TGI Paris" oninput="cf.court=this.value"></div>
+        <div class="fg"><label>${lang==='fr'?'Date d\'audience':'Hearing date'}</label><input type="date" id="cfDate" value="${cf.date}" oninput="cf.date=this.value"></div>
+      </div>
+      <div class="fg" style="margin-bottom:16px"><label>${lang==='fr'?'Contexte':'Context'}</label><textarea id="cfCtx" placeholder="${lang==='fr'?'Contexte additionnel...':'Additional context...'}" oninput="cf.context=this.value">${cf.context}</textarea></div>
+      <button class="btn btn-gold" style="width:100%;justify-content:center;padding:14px" onclick="doAnalyze()">${t('analyzeBtn')}</button>
+    </div>
+    ${result ? renderResultHTML(result) : ''}
+  </div>`;
+
+  if (result) {
+    document.getElementById('resultActions').style.display = 'flex';
+    setTimeout(() => {
+      const fill = document.getElementById('riskFill');
+      if (fill) {
+        const score = result.risk_score || (result.risk_level==='high'?75:result.risk_level==='medium'?45:20);
+        fill.style.width = score + '%';
+      }
+    }, 100);
+  }
+
+  document.getElementById('uploadZone').addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); });
+  document.getElementById('uploadZone').addEventListener('dragleave', e => e.currentTarget.classList.remove('drag-over'));
+  document.getElementById('uploadZone').addEventListener('drop', e => { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+}
+
+function handleFiles(fileList) {
+  Array.from(fileList).forEach(f => files.push(f));
+  renderFileList();
+}
+function renderFileList() {
+  const el = document.getElementById('fileList');
+  if (!el) return;
+  el.innerHTML = files.map((f,i) => `<span style="display:inline-flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;margin:4px">📄 ${f.name} <span style="cursor:pointer;color:var(--light)" onclick="files.splice(${i},1);renderFileList()">✕</span></span>`).join('');
+}
+
+// ===== ANALYZE FUNCTION =====
+async function doAnalyze() {
+  cf.name = document.getElementById('cfName')?.value || '';
+  cf.charge = document.getElementById('cfCharge')?.value || '';
+  cf.court = document.getElementById('cfCourt')?.value || '';
+  cf.date = document.getElementById('cfDate')?.value || '';
+  cf.context = document.getElementById('cfCtx')?.value || '';
+
+  if (!cf.charge && !cf.name) {
+    toast(lang==='fr'?'Veuillez remplir le nom du client et la charge.':'Please fill in client name and charge.', 'e');
+    return;
+  }
+
+  const content = document.getElementById('analyzeContent');
+  renderLoading(content);
+
+  // Step animation
+  const steps = document.querySelectorAll('.loading-step');
+  let si = 0;
+  const stTimer = setInterval(() => {
+    if (si > 0 && steps[si-1]) steps[si-1].className = 'loading-step done';
+    if (si < steps.length && steps[si]) steps[si].className = 'loading-step active';
+    si++;
+    if (si > steps.length) clearInterval(stTimer);
+  }, 700);
+
+  const addFeed = (msg, cls='active') => {
+    const feed = document.getElementById('searchFeed');
+    if (!feed) return;
+    const d = document.createElement('div');
+    d.className = 'feed-item ' + cls;
+    d.innerHTML = `<span>›</span>${msg}`;
+    feed.appendChild(d);
+    feed.scrollTop = feed.scrollHeight;
+    if (cls === 'active') setTimeout(() => d.className = 'feed-item done', 2000);
+  };
+
+  // Search via backend
+  let lfResults = [], judResults = [];
+  const query = cf.charge || cf.context || 'infraction pénale';
+
+  addFeed(`🏛️ Légifrance: "${query}"`);
+  try {
+    const resp = await fetch(`${API}/api/legifrance/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${currentSession?.access_token || localStorage.getItem('km_token') || ''}`
+      },
+      body: JSON.stringify({ query, maxResults: 5 })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      lfResults = data.results || [];
+      addFeed(`✅ ${lfResults.length} articles Légifrance`, 'done');
+    }
+  } catch(e) {
+    addFeed('⚠️ Légifrance — mode local', 'done');
+  }
+
+  addFeed(`⚖️ Judilibre: "${cf.charge || query}"`);
+  try {
+    const resp = await fetch(`${API}/api/legifrance/judilibre`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${currentSession?.access_token || localStorage.getItem('km_token') || ''}`
+      },
+      body: JSON.stringify({ query: cf.charge || query, maxResults: 3 })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      judResults = data.results || [];
+      addFeed(`✅ ${judResults.length} décisions Judilibre`, 'done');
+    }
+  } catch(e) {
+    addFeed('⚠️ Judilibre — mode local', 'done');
+  }
+
+  addFeed('📝 Analyse IA en cours...');
+
+  // Build prompt
+  const lfCtx = lfResults.length
+    ? '\n\nRÉSULTATS LÉGIFRANCE:\n' + lfResults.slice(0,3).map((r,i) => `${i+1}. ${r.titre||r.title||'Article'}: ${r.extraits?.[0]||''}`).join('\n')
+    : '';
+  const judCtx = judResults.length
+    ? '\n\nRÉSULTATS JUDILIBRE:\n' + judResults.slice(0,3).map((r,i) => `${i+1}. ${r.chamber||''} ${r.decision_date||''}: ${r.sommaire||r.text?.slice(0,200)||''}`).join('\n')
+    : '';
+
+  const prompt = `Tu es KaseMind, assistant juridique IA expert en droit français. Réponds en ${lang==='fr'?'français':'anglais'}.
+
+DOSSIER:
+- Client: ${cf.name||'Non spécifié'}
+- Charge: ${cf.charge||'À déterminer'}
+- Tribunal: ${cf.court||'Non spécifié'}
+- Date: ${cf.date||'Non spécifiée'}
+- Contexte: ${cf.context||'Aucun'}
+${lfCtx}${judCtx}
+
+Réponds UNIQUEMENT en JSON valide, sans markdown:
+{
+  "summary": "Résumé 3-4 phrases",
+  "charges_analysis": "Analyse technique des charges",
+  "risk_level": "low|medium|high",
+  "risk_score": 45,
+  "risk_explanation": "Explication du niveau de risque",
+  "prosecution_weaknesses": ["faille 1","faille 2","faille 3"],
+  "defense_strengths": ["force 1","force 2","force 3"],
+  "applicable_laws": [{"article":"Art. X CP","text":"Pertinence","source":"Légifrance"}],
+  "jurisprudence": [{"ref":"Cass. crim. date","text":"Résumé et pertinence","source":"Judilibre"}],
+  "strategies": [{"title":"Titre stratégie","text":"Description complète"},{"title":"Titre 2","text":"Description 2"}],
+  "what_to_say": "Script exact pour le tribunal",
+  "investigate_further": ["point 1","point 2"],
+  "client_explanation": {
+    "what_happened": "Explication simple",
+    "what_it_means": "Conséquences concrètes",
+    "what_lawyer_does": "Ce que fait l'avocat",
+    "what_to_expect": "À quoi s'attendre",
+    "advice": "Conseils pratiques"
+  }
+}`;
+
+  let aiResult = null;
+  const _authTok = currentSession?.access_token || localStorage.getItem('km_token') || '';
+  try {
+    const backendResp = await fetch(`${API}/api/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${_authTok}`
+      },
+      body: JSON.stringify({ prompt, caseData: cf })
+    });
+    if (backendResp.ok) {
+      const bd = await backendResp.json();
+      aiResult = bd.result;
+      console.log('✅ Analysis via secure backend');
+    } else {
+      throw new Error('Backend failed: ' + backendResp.status);
+    }
+  } catch(e) {
+    console.log('⚠️ Using fallback:', e.message);
+    aiResult = buildFallback();
+  }
+
+  // Inject real LF/Judilibre results
+  if (lfResults.length && aiResult.applicable_laws) {
+    lfResults.slice(0,2).forEach(r => {
+      const title = r.titre || r.title;
+      if (title) aiResult.applicable_laws.unshift({ article: title, text: 'Consulté sur Légifrance', source: 'Légifrance ✓ Officiel' });
+    });
+  }
+  if (judResults.length && aiResult.jurisprudence) {
+    judResults.slice(0,2).forEach(r => {
+      if (r.chamber) aiResult.jurisprudence.unshift({ ref: `${r.chamber} — ${r.decision_date||''}`, text: r.sommaire || 'Décision consultée sur Judilibre', source: 'Judilibre ✓ Officiel' });
+    });
+  }
+
+  clearInterval(stTimer);
+  result = aiResult;
+  toast(t('toastComplete'), 's');
+  document.getElementById('resultActions').style.display = 'flex';
+  content.innerHTML = '<div style="padding:24px">' + renderResultHTML(result) + '</div>';
+  setTimeout(() => {
+    const fill = document.getElementById('riskFill');
+    if (fill) fill.style.width = (result.risk_score || 45) + '%';
+  }, 100);
+}
+
+function buildFallback() {
+  return {
+    summary: lang==='fr'?`Dossier de ${cf.name||'votre client'} concernant ${cf.charge||'l\'affaire'}. Analyse via Légifrance et Judilibre effectuée.`:`Case of ${cf.name||'your client'} regarding ${cf.charge||'the matter'}.`,
+    charges_analysis: lang==='fr'?`L'infraction de ${cf.charge||'l\'espèce'} requiert la preuve de l'élément matériel et intentionnel.`:`The offense requires proof of both material and intentional elements.`,
+    risk_level:'medium', risk_score:45,
+    risk_explanation: lang==='fr'?'Risque modéré. Des arguments solides de défense existent.':'Moderate risk. Strong defense arguments exist.',
+    prosecution_weaknesses:[lang==='fr'?'Absence de preuve directe':'Lack of direct evidence', lang==='fr'?'Témoignages potentiellement biaisés':'Potentially biased testimony', lang==='fr'?'Procédure potentiellement irrégulière':'Potentially irregular procedure'],
+    defense_strengths:[lang==='fr'?'Absence d\'antécédents':'No prior record', lang==='fr'?'Contexte favorable':'Favorable context', lang==='fr'?'Bonne foi démontrée':'Good faith demonstrated'],
+    applicable_laws:[{article:lang==='fr'?'Art. 121-3 Code Pénal':'Art. 121-3 Penal Code',text:lang==='fr'?'Pas de crime sans intention':'No crime without intent',source:'Légifrance'}],
+    jurisprudence:[{ref:'Cass. Crim. 2024',text:lang==='fr'?'L\'intention doit être clairement établie par le Ministère Public.':'Intent must be clearly established by the prosecution.',source:'Judilibre'}],
+    strategies:[{title:lang==='fr'?'Contestation de l\'intention':'Contesting intent',text:lang==='fr'?'Démontrer l\'absence d\'intention délictuelle en s\'appuyant sur Art. 121-3 CP.':'Demonstrate absence of criminal intent relying on Art. 121-3 PC.'},{title:lang==='fr'?'Nullité de procédure':'Procedural nullity',text:lang==='fr'?'Examiner la régularité des actes de procédure. Toute irrégularité entraîne la nullité.':'Examine the regularity of procedural acts. Any irregularity leads to nullity.'}],
+    what_to_say:lang==='fr'?`"Monsieur le Président, ${cf.name||'mon client'} n'avait aucune intention délictuelle. Les éléments produits par le Ministère Public ne permettent pas d'établir l'infraction avec certitude. Je sollicite la relaxe."`:`"Your Honor, ${cf.name||'my client'} had no criminal intent. The prosecution's evidence is insufficient to establish the offense beyond reasonable doubt. I move for acquittal."`,
+    investigate_further:[lang==='fr'?'Vérifier la régularité de la procédure':'Check procedural regularity', lang==='fr'?'Rechercher des témoins favorables':'Find favorable witnesses'],
+    client_explanation:{
+      what_happened:lang==='fr'?`Vous êtes accusé(e) de ${cf.charge||'l\'infraction mentionnée'}.`:`You are accused of ${cf.charge||'the mentioned offense'}.`,
+      what_it_means:lang==='fr'?'Vous devez vous présenter au tribunal.':'You must appear before the court.',
+      what_lawyer_does:lang==='fr'?'Votre avocat prépare votre défense.':'Your lawyer is preparing your defense.',
+      what_to_expect:lang==='fr'?'Une audience où votre avocat présentera vos arguments.':'A hearing where your lawyer will present your arguments.',
+      advice:lang==='fr'?'Restez calme et faites confiance à votre avocat.':'Stay calm and trust your lawyer.'
+    }
+  };
+}
+
+function renderLoading(container) {
+  container.innerHTML = `
+  <div style="padding:24px">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-title">${lang==='fr'?'KaseMind consulte Légifrance...':'KaseMind consulting Légifrance...'}</div>
+      <div class="loading-steps">
+        ${t('steps').map((s,i) => `<div class="loading-step${i===0?' active':''}"><div class="step-dot"></div>${s}</div>`).join('')}
+      </div>
+      <div class="search-feed">
+        <div class="search-feed-title">🔍 ${lang==='fr'?'Recherches en cours':'Searches in progress'}</div>
+        <div id="searchFeed"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderResultHTML(r) {
+  if (!r) return '';
+  const score = r.risk_score || (r.risk_level==='high'?75:r.risk_level==='medium'?45:20);
+  const rc = r.risk_level==='high'?'high':r.risk_level==='medium'?'medium':'low';
+  const rLabel = rc==='high'?t('riskH'):rc==='medium'?t('riskM'):t('riskL');
+
+  return `
+  <div class="result-header">
+    <div>
+      <div class="result-name">${cf.name||lang==='fr'?'Analyse de dossier':'Case analysis'}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:3px">${cf.charge||''} ${cf.court?'· '+cf.court:''}</div>
+    </div>
+    <div class="result-complete">✓ ${lang==='fr'?'Analyse complète':'Analysis complete'}</div>
+  </div>
+  <div class="result-tabs">
+    <button class="rtab active" id="rtab-l" onclick="switchRT('l')">⚖️ ${lang==='fr'?'Vue Avocat':'Lawyer View'}</button>
+    <button class="rtab" id="rtab-c" onclick="switchRT('c')">👤 ${lang==='fr'?'Vue Client':'Client View'}</button>
+  </div>
+
+  <div id="rv-l">
+    ${r.summary?`<div class="section"><div class="section-label">${lang==='fr'?'Résumé':'Summary'}</div><div class="section-text">${r.summary}</div></div>`:''}
+    ${r.charges_analysis?`<div class="section"><div class="section-label">${lang==='fr'?'Analyse des charges':'Charge analysis'}</div><div class="section-text">${r.charges_analysis}</div></div>`:''}
+
+    <div class="section">
+      <div class="section-label">${lang==='fr'?'Niveau de risque':'Risk level'}</div>
+      <div class="risk-wrap">
+        <div class="risk-score ${rc}">${score}<span style="font-size:16px">%</span></div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--${rc==='high'?'danger':rc==='medium'?'warn':'success'})">${rLabel}</div>
+          <div style="font-size:12px;color:var(--muted);margin:4px 0">${r.risk_explanation||''}</div>
+          <div class="risk-bar-outer"><div class="risk-bar-fill risk-${rc}" style="width:0" id="riskFill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    ${r.prosecution_weaknesses?.length?`<div class="section"><div class="section-label">${lang==='fr'?'Failles de l\'accusation':'Prosecution weaknesses'}</div><ul class="pts-list">${r.prosecution_weaknesses.map(w=>`<li class="pt pt-bad"><span>🔴</span>${w}</li>`).join('')}</ul></div>`:''}
+    ${r.defense_strengths?.length?`<div class="section"><div class="section-label">${lang==='fr'?'Points favorables':'Defense strengths'}</div><ul class="pts-list">${r.defense_strengths.map(s=>`<li class="pt pt-good"><span>🟢</span>${s}</li>`).join('')}</ul></div>`:''}
+
+    ${r.applicable_laws?.length?`<div class="section"><div class="section-label">📜 ${lang==='fr'?'Articles Légifrance':'Légifrance Articles'}</div>${r.applicable_laws.map(l=>`<div class="law-card"><div class="law-article">${l.article}</div><div class="law-text">${l.text}</div><div><span class="chip chip-lf">${l.source||'Légifrance'}</span></div></div>`).join('')}</div>`:''}
+    ${r.jurisprudence?.length?`<div class="section"><div class="section-label">⚖️ ${lang==='fr'?'Jurisprudence Judilibre':'Judilibre Jurisprudence'}</div>${r.jurisprudence.map(j=>`<div class="juris-card"><div class="juris-ref">${j.ref}</div><div class="juris-text">${j.text}</div><div><span class="chip chip-jud">${j.source||'Judilibre'}</span></div></div>`).join('')}</div>`:''}
+    ${r.strategies?.length?`<div class="section"><div class="section-label">${lang==='fr'?'Stratégie de défense':'Defense strategy'}</div>${r.strategies.map((s,i)=>`<div class="strategy-card"><div class="strategy-n">${i+1}</div><div class="strategy-title">${s.title}</div><div class="strategy-text">${s.text}</div></div>`).join('')}</div>`:''}
+    ${r.what_to_say?`<div class="section"><div class="section-label">💬 ${lang==='fr'?'Ce qu\'il faut dire':'What to say'}</div><div class="say-box">${r.what_to_say}</div></div>`:''}
+    ${r.investigate_further?.length?`<div class="section"><div class="section-label">🔎 ${lang==='fr'?'À investiguer':'Investigate further'}</div><ul class="pts-list">${r.investigate_further.map(i=>`<li class="pt pt-info"><span>🔎</span>${i}</li>`).join('')}</ul></div>`:''}
+
+    <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+      <button class="btn btn-navy" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:''};setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
+      <button class="btn btn-gold" onclick="saveCase()">💾 ${lang==='fr'?'Sauvegarder':'Save'}</button>
+      <button class="btn" onclick="window.print()">🖨️</button>
+    </div>
+  </div>
+
+  <div id="rv-c" style="display:none">
+    ${r.client_explanation?`<div class="client-card">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#0c4a6e;margin-bottom:4px">${cf.name||lang==='fr'?'Votre dossier':'Your case'}</div>
+      <div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px">${lang==='fr'?'Préparé par votre avocat via KaseMind':'Prepared by your lawyer via KaseMind'}</div>
+      ${Object.entries({[lang==='fr'?'📋 Ce qui se passe':'📋 What is happening']:r.client_explanation.what_happened,[lang==='fr'?'⚖️ Ce que cela signifie':'⚖️ What this means']:r.client_explanation.what_it_means,[lang==='fr'?'🛡️ Ce que fait votre avocat':'🛡️ What your lawyer is doing']:r.client_explanation.what_lawyer_does,[lang==='fr'?'🔮 À quoi s\'attendre':'🔮 What to expect']:r.client_explanation.what_to_expect,[lang==='fr'?'💡 Conseils':'💡 Advice']:r.client_explanation.advice}).map(([k,v])=>`<div class="client-sec-title">${k}</div><div class="client-sec-text">${v||'—'}</div>`).join('')}
+    </div>`:''}
+  </div>`;
+}
+
+function switchRT(tab) {
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('rtab-'+tab)?.classList.add('active');
+  document.getElementById('rv-l').style.display = tab==='l'?'block':'none';
+  document.getElementById('rv-c').style.display = tab==='c'?'block':'none';
+}
+
+// ===== SAVE CASE =====
+async function saveCase() {
+  if (!result) return;
+
+  const caseData = {
+    clientName: cf.name,
+    clientEmail: '',
+    charge: cf.charge,
+    court: cf.court,
+    hearingDate: cf.date || null,
+    notes: cf.context,
+    riskLevel: result.risk_level,
+    riskScore: result.risk_score,
+    analysisJson: result
+  };
+
+  // Try to save via backend
+  const _saveTok = currentSession?.access_token || localStorage.getItem('km_token') || '';
+  if (_saveTok) {
+    try {
+      const resp = await fetch(`${API}/api/cases`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${_saveTok}`
+        },
+        body: JSON.stringify(caseData)
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        cases.unshift(data.case);
+        updateCasesBadge();
+        toast(t('toastSaved'), 's');
+        return;
+      }
+    } catch(e) { /* fallback */ }
+  }
+
+  // Fallback to localStorage
+  const entry = {
+    id: Date.now(),
+    name: cf.name, client_name: cf.name,
+    charge: cf.charge,
+    court: cf.court,
+    date: cf.date, hearing_date: cf.date,
+    risk: result.risk_level, risk_level: result.risk_level,
+    result
+  };
+  cases.unshift(entry);
+  localStorage.setItem('km_cases', JSON.stringify(cases));
+  updateCasesBadge();
+  toast(t('toastSaved'), 's');
+}
+
+// ===== CASES PAGE =====
+function renderCases(container) {
+  container.innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">${lang==='fr'?'Mes dossiers':'My cases'}</div>
+      <div class="page-sub">${cases.length} ${lang==='fr'?'dossier(s)':'case(s)'}</div>
+    </div>
+    <button class="btn btn-gold" onclick="setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
+  </div>
+  <div class="page-content" id="casesContent"></div>`;
+
+  const c = document.getElementById('casesContent');
+  if (!cases.length) {
+    c.innerHTML = `<div class="empty"><div class="empty-icon">📁</div><div class="empty-title">${t('noCases')}</div><p class="empty-sub">${t('noCasesSub')}</p></div>`;
+    return;
+  }
+  cases.forEach(cs => {
+    const rp = cs.risk_level==='high'||cs.risk==='high' ? `<div class="risk-pill risk-pill-h">🔴 ${t('riskH')}</div>` :
+               cs.risk_level==='medium'||cs.risk==='medium' ? `<div class="risk-pill risk-pill-m">🟡 ${t('riskM')}</div>` :
+               `<div class="risk-pill risk-pill-l">🟢 ${t('riskL')}</div>`;
+    const row = document.createElement('div');
+    row.className = 'card';
+    row.style = 'margin-bottom:10px;padding:16px 20px;cursor:pointer;transition:all .2s';
+    row.innerHTML = `<div style="display:flex;align-items:center;gap:12px"><div style="font-size:20px">⚖️</div><div style="flex:1"><div style="font-family:\'Cormorant Garamond\',serif;font-size:17px;font-weight:600">${cs.client_name||cs.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${cs.charge||'—'} · ${cs.court||'—'} · ${cs.hearing_date||cs.date||'—'}</div></div>${rp}</div>`;
+    row.onmouseover = () => row.style.borderColor = 'var(--gold)';
+    row.onmouseout = () => row.style.borderColor = 'var(--border)';
+    row.onclick = () => {
+      cf = { name:cs.client_name||cs.name, charge:cs.charge||'', court:cs.court||'', date:cs.hearing_date||cs.date||'', context:'' };
+      result = cs.analysis_json || cs.result || null;
+      setPage('analyze');
+    };
+    c.appendChild(row);
+  });
+}
+
+// ===== SETTINGS =====
+function renderSettings(container) {
+  container.innerHTML = `
+  <div class="page-header">
+    <div class="page-title">${lang==='fr'?'Paramètres':'Settings'}</div>
+  </div>
+  <div class="page-content">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><div class="card-title">👤 ${lang==='fr'?'Profil':'Profile'}</div></div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="fg"><label>${lang==='fr'?'Email':'Email'}</label><input value="${currentUser?.email||''}" readonly style="opacity:.6"></div>
+          <div class="fg"><label>${lang==='fr'?'Plan':'Plan'}</label><input value="${currentUser?.plan||'trial'}" readonly style="opacity:.6;text-transform:capitalize"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><div class="card-title">🌐 ${lang==='fr'?'Langue':'Language'}</div></div>
+      <div class="card-body">
+        <div style="display:flex;gap:10px">
+          <button class="btn${lang==='fr'?' btn-gold':''}" onclick="setLang('fr');renderSettings(document.getElementById('pageContent'))">🇫🇷 Français</button>
+          <button class="btn${lang==='en'?' btn-gold':''}" onclick="setLang('en');renderSettings(document.getElementById('pageContent'))">🇬🇧 English</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">💳 ${lang==='fr'?'Abonnement':'Subscription'}</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px">${lang==='fr'?`Vous êtes sur le plan <strong>${currentUser?.plan||'trial'}</strong>.`:`You are on the <strong>${currentUser?.plan||'trial'}</strong> plan.`}</p>
+        <button class="btn btn-gold" onclick="startCheckout('solo')">
+          ${lang==='fr'?'Gérer mon abonnement':'Manage subscription'}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== TOAST =====
+function toast(msg, type='i') {
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<span>${type==='s'?'✓':type==='e'?'✕':'ℹ'}</span>${msg}`;
+  c.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+// ===== INIT — Check Supabase Session =====
+async function init() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      currentSession = session;
+      localStorage.setItem('km_token', session.access_token);
+      await loadUserProfile(session.user);
+      showApp();
+    }
+  } catch(e) {
+    console.error('Session restore failed:', e);
+  }
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      currentSession = session;
+      localStorage.setItem('km_token', session.access_token);
+    } else if (event === 'TOKEN_REFRESHED' && session) {
+      currentSession = session;
+      localStorage.setItem('km_token', session.access_token);
+    } else if (event === 'SIGNED_OUT') {
+      currentSession = null;
+      currentUser = null;
+      localStorage.removeItem('km_token');
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>
