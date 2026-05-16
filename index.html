@@ -765,6 +765,10 @@ function renderDashboard(container) {
               <button class="btn btn-gold" style="width:100%;margin-top:16px;justify-content:center" onclick="startCheckout('solo')">
                 ${lang==='fr'?'Passer à Solo €99/mois':'Upgrade to Solo €99/mo'}
               </button>
+              <button class="btn btn-gold" style="width:100%;margin-top:8px;justify-content:center" onclick="startCheckout('firm')">${lang==='fr'?'Passer à Cabinet €299/mois':'Upgrade to Cabinet €299/mo'}</button>
+              <button class="btn btn-gold" style="width:100%;margin-top:8px;justify-content:center;background:var(--navy);color:var(--gold);border:1px solid var(--gold)" onclick="startCheckout('firm')">
+                ${lang==='fr'?'Passer à Cabinet €299/mois':'Upgrade to Cabinet €299/mo'}
+              </button>
             </div>
           </div>
         </div>
