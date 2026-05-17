@@ -406,7 +406,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       <button class="nav-item active" id="nav-dashboard" onclick="setPage('dashboard')">
         <span class="nav-icon">🏠</span>Tableau de bord
       </button>
-      <button class="nav-item" id="nav-analyze" onclick="setPage('analyze')">
+      <button class="nav-item" id="nav-analyze" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:''};window._currentCaseId=null;setPage('analyze')">
         <span class="nav-icon">🔍</span>Analyser un dossier
       </button>
       <button class="nav-item" id="nav-cases" onclick="setPage('cases')">
@@ -1330,7 +1330,7 @@ function renderResultHTML(r) {
     ${r.investigate_further?.length?`<div class="section"><div class="section-label">🔎 ${lang==='fr'?'À investiguer':'Investigate further'}</div><ul class="pts-list">${r.investigate_further.map(i=>`<li class="pt pt-info"><span>🔎</span>${i}</li>`).join('')}</ul></div>`:''}
 
     <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
-      <button class="btn btn-navy" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:''};setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
+      <button class="btn btn-navy" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:''};window._currentCaseId=null;setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
       <button class="btn btn-gold" onclick="saveCase()">💾 ${lang==='fr'?'Sauvegarder':'Save'}</button>
       <button class="btn" onclick="exportToPDF()">📄 PDF</button>
       <button class="btn" onclick="window.print()">🖨️</button>
@@ -1475,7 +1475,12 @@ function renderCases(container) {
 
   const c = document.getElementById('casesContent');
   if (!cases.length) {
-    c.innerHTML = `<div class="empty"><div class="empty-icon">📁</div><div class="empty-title">${t('noCases')}</div><p class="empty-sub">${t('noCasesSub')}</p></div>`;
+    c.innerHTML = `
+      <div class="empty"><div class="empty-icon">📁</div><div class="empty-title">${t('noCases')}</div><p class="empty-sub">${t('noCasesSub')}</p></div>
+      <div style="text-align:center;margin-top:16px">
+        <button onclick="loadAndShowArchives()" style="padding:8px 20px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">📦 ${lang==='fr'?'Voir les dossiers archivés':'View archived cases'}</button>
+      </div>
+      <div id="archiveContainer"></div>`;
     return;
   }
   cases.forEach(cs => {
