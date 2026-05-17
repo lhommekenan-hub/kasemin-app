@@ -1129,38 +1129,13 @@ async function doAnalyze() {
     ? '\n\nRÉSULTATS JUDILIBRE:\n' + judResults.slice(0,3).map((r,i) => `${i+1}. ${r.chamber||''} ${r.decision_date||''}: ${r.sommaire||r.text?.slice(0,200)||''}`).join('\n')
     : '';
 
-  const prompt = `Tu es KaseMind, assistant juridique IA expert en droit français. Réponds en ${lang==='fr'?'français':'anglais'}.
-
-DOSSIER:
+  const prompt = `DOSSIER À ANALYSER:
 - Client: ${cf.name||'Non spécifié'}
 - Charge: ${cf.charge||'À déterminer'}
 - Tribunal: ${cf.court||'Non spécifié'}
-- Date: ${cf.date||'Non spécifiée'}
-- Contexte: ${cf.context||'Aucun'}
-${lfCtx}${judCtx}
-
-Réponds UNIQUEMENT en JSON valide, sans markdown:
-{
-  "summary": "Résumé 3-4 phrases",
-  "charges_analysis": "Analyse technique des charges",
-  "risk_level": "low|medium|high",
-  "risk_score": 45,
-  "risk_explanation": "Explication du niveau de risque",
-  "prosecution_weaknesses": ["faille 1","faille 2","faille 3"],
-  "defense_strengths": ["force 1","force 2","force 3"],
-  "applicable_laws": [{"article":"Art. X CP","text":"Pertinence","source":"Légifrance"}],
-  "jurisprudence": [{"ref":"Cass. crim. date","text":"Résumé et pertinence","source":"Judilibre"}],
-  "strategies": [{"title":"Titre stratégie","text":"Description complète"},{"title":"Titre 2","text":"Description 2"}],
-  "what_to_say": "Script exact pour le tribunal",
-  "investigate_further": ["point 1","point 2"],
-  "client_explanation": {
-    "what_happened": "Explication simple",
-    "what_it_means": "Conséquences concrètes",
-    "what_lawyer_does": "Ce que fait l'avocat",
-    "what_to_expect": "À quoi s'attendre",
-    "advice": "Conseils pratiques"
-  }
-}`;
+- Date audience: ${cf.date||'Non spécifiée'}
+- Contexte et faits: ${cf.context||'Aucun contexte fourni'}
+${lfCtx}${judCtx}`;
 
   let aiResult = null;
   const _authTok = currentSession?.access_token || localStorage.getItem('km_token') || '';
