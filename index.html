@@ -1616,10 +1616,8 @@ function openCaseForReanalysis(caseId, clientName, charge, court, hearingDate) {
 // ===== ACTION BUTTONS (cross-exam, motion, contradictions) =====
 async function runMotionAction(action, caseId) {
   const token = currentSession?.access_token || localStorage.getItem('km_token');
-  if (!token || !caseId) {
-    toast(lang==='fr'?'Sauvegardez le dossier d\'abord':'Save the case first', 'e');
-    return;
-  }
+  if (!token) { toast('Non connecté', 'e'); return; }
+  if (!result) { toast(lang==='fr'?'Analysez un dossier d\'abord':'Analyze a case first', 'e'); return; }
 
   const container = document.getElementById('motionResult');
   if (container) {
@@ -1633,11 +1631,26 @@ async function runMotionAction(action, caseId) {
     timeline: '/api/motions/timeline'
   };
 
+  // Send analysis data directly — no need for caseId
   const bodies = {
-    crossExam: { caseId, witnessType: 'Témoin principal / Agent de police' },
-    motion: { caseId, motionType: 'relaxe' },
-    contradictions: { caseId },
-    timeline: { caseId }
+    crossExam: {
+      caseId: caseId || 'direct',
+      witnessType: 'Témoin principal / Agent de police',
+      caseData: { client_name: cf.name, charge: cf.charge, court: cf.court, analysis_json: result }
+    },
+    motion: {
+      caseId: caseId || 'direct',
+      motionType: 'relaxe',
+      caseData: { client_name: cf.name, charge: cf.charge, court: cf.court, hearing_date: cf.date, analysis_json: result }
+    },
+    contradictions: {
+      caseId: caseId || 'direct',
+      caseData: { client_name: cf.name, charge: cf.charge, notes: cf.context, analysis_json: result }
+    },
+    timeline: {
+      caseId: caseId || 'direct',
+      caseData: { client_name: cf.name, charge: cf.charge, court: cf.court, hearing_date: cf.date, created_at: new Date().toISOString() }
+    }
   };
 
   try {
@@ -1648,7 +1661,7 @@ async function runMotionAction(action, caseId) {
     });
 
     const data = await resp.json();
-    if (!resp.ok) { toast(data.error || 'Erreur', 'e'); return; }
+    if (!resp.ok) { toast(data.error || 'Erreur', 'e'); if(container) container.innerHTML=''; return; }
 
     renderMotionResult(action, data.result, container);
   } catch(e) {
