@@ -1156,22 +1156,25 @@ ${lfCtx}${judCtx}`;
       if (aiResult && aiResult.analyse && !aiResult.summary) {
         try {
           const rawText = aiResult.analyse;
-          const clean = rawText
-            .replace(/^```json\s*/i, '')
-            .replace(/^```\s*/i, '')
-            .replace(/```\s*$/i, '')
-            .trim();
-          const parsed = JSON.parse(clean);
-          if (parsed.summary) aiResult = parsed;
+          // Find first { and try to parse from there
+          const startIdx = rawText.indexOf('{');
+          if (startIdx !== -1) {
+            const jsonStr = rawText.substring(startIdx);
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.summary) aiResult = parsed;
+          }
         } catch(e1) {
+          // Try cleaning markdown fences first
           try {
-            const jsonMatch = aiResult.analyse.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              if (parsed.summary) aiResult = parsed;
-            }
+            const cleaned = aiResult.analyse
+              .replace(/^```json\s*/i, '')
+              .replace(/^```\s*/i, '')
+              .replace(/```\s*$/i, '')
+              .trim();
+            const parsed = JSON.parse(cleaned);
+            if (parsed.summary) aiResult = parsed;
           } catch(e2) {
-            console.log('Could not extract JSON from analyse field');
+            console.log('Frontend JSON extraction failed:', e2.message);
           }
         }
       }
