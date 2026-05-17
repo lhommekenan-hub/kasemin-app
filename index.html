@@ -1365,16 +1365,31 @@ async function saveCase() {
     analysisJson: result
   };
 
-  // Try to save via backend
   const _saveTok = currentSession?.access_token || localStorage.getItem('km_token') || '';
   if (_saveTok) {
     try {
+      // If case already exists, UPDATE it — don't create a duplicate
+      if (window._currentCaseId) {
+        const resp = await fetch(`${API}/api/cases/${window._currentCaseId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_saveTok}` },
+          body: JSON.stringify({
+            riskLevel: result.risk_level,
+            riskScore: result.risk_score,
+            analysisJson: result,
+            notes: cf.context
+          })
+        });
+        if (resp.ok) {
+          toast(lang==='fr'?'Dossier mis à jour':'Case updated', 's');
+          return;
+        }
+      }
+
+      // Otherwise CREATE new case
       const resp = await fetch(`${API}/api/cases`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${_saveTok}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_saveTok}` },
         body: JSON.stringify(caseData)
       });
       if (resp.ok) {
@@ -1399,6 +1414,7 @@ async function saveCase() {
     result
   };
   cases.unshift(entry);
+  window._currentCaseId = entry.id;
   localStorage.setItem('km_cases', JSON.stringify(cases));
   updateCasesBadge();
   toast(t('toastSaved'), 's');
