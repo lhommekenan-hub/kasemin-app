@@ -1496,6 +1496,80 @@ function renderCases(container) {
     };
     c.appendChild(row);
   });
+
+  // Archives button
+  const archiveBtn = document.createElement('div');
+  archiveBtn.style = 'text-align:center;margin-top:20px';
+  archiveBtn.innerHTML = `<button onclick="loadAndShowArchives()" style="padding:8px 20px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">📦 ${lang==='fr'?'Voir les dossiers archivés':'View archived cases'}</button>`;
+  c.appendChild(archiveBtn);
+
+  // Archive container
+  const archiveContainer = document.createElement('div');
+  archiveContainer.id = 'archiveContainer';
+  c.appendChild(archiveContainer);
+}
+
+async function loadAndShowArchives() {
+  const token = currentSession?.access_token || localStorage.getItem('km_token');
+  const container = document.getElementById('archiveContainer');
+  if (!container) return;
+
+  container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Chargement des archives...</div>`;
+
+  try {
+    const resp = await fetch(`${API}/api/cases?status=closed`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await resp.json();
+    const archived = data.cases || [];
+
+    if (!archived.length) {
+      container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">📦 ${lang==='fr'?'Aucun dossier archivé':'No archived cases'}</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">📦 ${lang==='fr'?'Dossiers archivés':'Archived cases'} (${archived.length})</div>
+        ${archived.map(cs => `
+          <div class="card" style="margin-bottom:8px;padding:14px 18px;opacity:.7;display:flex;align-items:center;gap:12px">
+            <div style="font-size:18px">📁</div>
+            <div style="flex:1">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--muted)">${cs.client_name||'—'}</div>
+              <div style="font-size:11px;color:var(--light);margin-top:2px">${cs.charge||'—'} · ${cs.court||'—'}</div>
+            </div>
+            <button onclick="reopenCase('${cs.id}',event)" style="padding:6px 14px;background:var(--success-light);border:1px solid rgba(22,163,74,.2);border-radius:6px;color:var(--success);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">
+              🔓 ${lang==='fr'?'Rouvrir':'Reopen'}
+            </button>
+          </div>
+        `).join('')}
+      </div>`;
+  } catch(e) {
+    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);font-size:13px">Erreur de chargement</div>`;
+  }
+}
+
+async function reopenCase(caseId, event) {
+  event.stopPropagation();
+  const token = currentSession?.access_token || localStorage.getItem('km_token');
+
+  try {
+    const resp = await fetch(`${API}/api/cases/${caseId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ status: 'active' })
+    });
+
+    if (resp.ok) {
+      toast(lang==='fr'?'Dossier réouvert !':'Case reopened!', 's');
+      await loadCases();
+      setPage('cases');
+    } else {
+      toast('Erreur lors de la réouverture', 'e');
+    }
+  } catch(e) {
+    toast('Erreur de connexion', 'e');
+  }
 }
 
 async function deleteCase(caseId, event) {
