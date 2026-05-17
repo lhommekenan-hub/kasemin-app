@@ -1202,6 +1202,10 @@ Réponds UNIQUEMENT en JSON valide, sans markdown:
       }
 
       console.log('✅ Analysis via secure backend');
+      console.log('aiResult keys:', aiResult ? Object.keys(aiResult) : 'null');
+      console.log('has summary:', !!aiResult?.summary);
+      console.log('has analyse:', !!aiResult?.analyse);
+      if (aiResult?.analyse) console.log('analyse preview:', aiResult.analyse.substring(0, 100));
     } else {
       throw new Error('Backend failed: ' + backendResp.status);
     }
