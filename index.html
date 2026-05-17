@@ -11,14 +11,14 @@
 :root{
   --navy:#0a1628;--navy2:#0f2044;--navy3:#162d5e;
   --gold:#c9a84c;--gold2:#e8c96a;--gold-light:#fdf6e3;
-  --bg:#f4f6fb;--card:#ffffff;--border:#e2e8f4;--border2:#c8d4e8;
+  --bg:#f8f9fc;--card:#ffffff;--border:#e2e8f4;--border2:#c8d4e8;
   --text:#0a1628;--muted:#64748b;--light:#94a3b8;
   --success:#16a34a;--success-light:#dcfce7;
   --danger:#dc2626;--danger-light:#fee2e2;
   --warn:#d97706;--warn-light:#fef3c7;
   --radius:16px;--radius-sm:10px;--radius-xs:6px;
-  --shadow:0 2px 16px rgba(10,22,40,.08);
-  --shadow-md:0 8px 32px rgba(10,22,40,.12);
+  --shadow:0 2px 16px rgba(10,22,40,.06);
+  --shadow-md:0 8px 32px rgba(10,22,40,.10);
 }
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;overflow-x:hidden}
 
@@ -1334,11 +1334,23 @@ function renderResultHTML(r) {
   </div>
 
   <div id="rv-c" style="display:none">
-    ${r.client_explanation?`<div class="client-card">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#0c4a6e;margin-bottom:4px">${cf.name||lang==='fr'?'Votre dossier':'Your case'}</div>
+    <div class="client-card">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#0c4a6e;margin-bottom:4px">${cf.name||'Votre dossier'}</div>
       <div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px">${lang==='fr'?'Préparé par votre avocat via KaseMind':'Prepared by your lawyer via KaseMind'}</div>
-      ${Object.entries({[lang==='fr'?'📋 Ce qui se passe':'📋 What is happening']:r.client_explanation.what_happened,[lang==='fr'?'⚖️ Ce que cela signifie':'⚖️ What this means']:r.client_explanation.what_it_means,[lang==='fr'?'🛡️ Ce que fait votre avocat':'🛡️ What your lawyer is doing']:r.client_explanation.what_lawyer_does,[lang==='fr'?'🔮 À quoi s\'attendre':'🔮 What to expect']:r.client_explanation.what_to_expect,[lang==='fr'?'💡 Conseils':'💡 Advice']:r.client_explanation.advice}).map(([k,v])=>`<div class="client-sec-title">${k}</div><div class="client-sec-text">${v||'—'}</div>`).join('')}
-    </div>`:''}
+      ${r.client_explanation ? Object.entries({
+        [lang==='fr'?'📋 Ce qui se passe':'📋 What is happening']: r.client_explanation.what_happened,
+        [lang==='fr'?'⚖️ Ce que cela signifie':'⚖️ What this means']: r.client_explanation.what_it_means,
+        [lang==='fr'?'🛡️ Ce que fait votre avocat':'🛡️ What your lawyer is doing']: r.client_explanation.what_lawyer_does,
+        [lang==='fr'?'🔮 À quoi s\'attendre':'🔮 What to expect']: r.client_explanation.what_to_expect,
+        [lang==='fr'?'💡 Conseils':'💡 Advice']: r.client_explanation.advice
+      }).map(([k,v])=>`<div class="client-sec-title">${k}</div><div class="client-sec-text">${v||'—'}</div>`).join('') :
+      `<div class="client-sec-title">📋 ${lang==='fr'?'Votre situation':'Your situation'}</div>
+       <div class="client-sec-text">${lang==='fr'?`Vous êtes concerné par une procédure judiciaire pour ${cf.charge||'l\'affaire en cours'}. Votre avocat a analysé votre dossier et prépare votre défense.`:`You are involved in a judicial proceeding for ${cf.charge||'the current matter'}. Your lawyer has analyzed your case and is preparing your defense.`}</div>
+       <div class="client-sec-title">⚖️ ${lang==='fr'?'Niveau de risque':'Risk level'}</div>
+       <div class="client-sec-text">${r.risk_level==='high'?lang==='fr'?'Situation sérieuse — votre avocat travaille activement à votre défense.':'Serious situation — your lawyer is actively working on your defense.':r.risk_level==='medium'?lang==='fr'?'Situation modérée — des arguments solides existent en votre faveur.':'Moderate situation — strong arguments exist in your favor.':lang==='fr'?'Situation favorable — votre avocat est confiant.':'Favorable situation — your lawyer is confident.'}</div>
+       <div class="client-sec-title">💡 ${lang==='fr'?'Conseils':'Advice'}</div>
+       <div class="client-sec-text">${lang==='fr'?'Restez calme, ne parlez à personne de votre affaire sans votre avocat, et rassemblez tous les documents qui pourraient aider votre défense.':'Stay calm, do not discuss your case with anyone without your lawyer, and gather all documents that could help your defense.'}</div>`}
+    </div>
   </div>`;
 }
 
