@@ -1176,6 +1176,31 @@ Réponds UNIQUEMENT en JSON valide, sans markdown:
     if (backendResp.ok) {
       const bd = await backendResp.json();
       aiResult = bd.result;
+
+      // If result came back as {analyse: "...json..."} fallback, extract the real JSON
+      if (aiResult && aiResult.analyse && !aiResult.summary) {
+        try {
+          const rawText = aiResult.analyse;
+          const clean = rawText
+            .replace(/^```json\s*/i, '')
+            .replace(/^```\s*/i, '')
+            .replace(/```\s*$/i, '')
+            .trim();
+          const parsed = JSON.parse(clean);
+          if (parsed.summary) aiResult = parsed;
+        } catch(e1) {
+          try {
+            const jsonMatch = aiResult.analyse.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              if (parsed.summary) aiResult = parsed;
+            }
+          } catch(e2) {
+            console.log('Could not extract JSON from analyse field');
+          }
+        }
+      }
+
       console.log('✅ Analysis via secure backend');
     } else {
       throw new Error('Backend failed: ' + backendResp.status);
