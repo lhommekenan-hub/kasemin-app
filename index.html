@@ -1444,16 +1444,40 @@ function renderCases(container) {
     const row = document.createElement('div');
     row.className = 'card';
     row.style = 'margin-bottom:10px;padding:16px 20px;cursor:pointer;transition:all .2s';
-    row.innerHTML = `<div style="display:flex;align-items:center;gap:12px"><div style="font-size:20px">⚖️</div><div style="flex:1"><div style="font-family:\'Cormorant Garamond\',serif;font-size:17px;font-weight:600">${cs.client_name||cs.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${cs.charge||'—'} · ${cs.court||'—'} · ${cs.hearing_date||cs.date||'—'}</div></div>${rp}</div>`;
+    row.innerHTML = `<div style="display:flex;align-items:center;gap:12px"><div style="font-size:20px">⚖️</div><div style="flex:1"><div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600">${cs.client_name||cs.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${cs.charge||'—'} · ${cs.court||'—'} · ${cs.hearing_date||cs.date||'—'}</div></div>${rp}<button onclick="deleteCase('${cs.id||''}',event)" style="padding:5px 10px;background:var(--danger-light);border:1px solid rgba(220,38,38,.2);border-radius:6px;color:var(--danger);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:8px">🗑️</button></div>`;
     row.onmouseover = () => row.style.borderColor = 'var(--gold)';
     row.onmouseout = () => row.style.borderColor = 'var(--border)';
     row.onclick = () => {
       cf = { name:cs.client_name||cs.name, charge:cs.charge||'', court:cs.court||'', date:cs.hearing_date||cs.date||'', context:'' };
       result = cs.analysis_json || cs.result || null;
+      if (cs.id) window._currentCaseId = cs.id;
       setPage('analyze');
     };
     c.appendChild(row);
   });
+}
+
+async function deleteCase(caseId, event) {
+  event.stopPropagation();
+  if (!confirm(lang==='fr'?'Archiver ce dossier ?':'Archive this case?')) return;
+
+  const token = currentSession?.access_token || localStorage.getItem('km_token');
+
+  if (token && caseId && caseId !== 'undefined') {
+    try {
+      await fetch(`${API}/api/cases/${caseId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch(e) {}
+  }
+
+  // Remove from local array
+  cases = cases.filter(c => c.id !== caseId);
+  localStorage.setItem('km_cases', JSON.stringify(cases));
+  updateCasesBadge();
+  setPage('cases');
+  toast(lang==='fr'?'Dossier archivé':'Case archived', 's');
 }
 
 // ===== SETTINGS =====
@@ -1645,7 +1669,15 @@ async function runMotionAction(action, caseId) {
     },
     contradictions: {
       caseId: caseId || 'direct',
-      caseData: { client_name: cf.name, charge: cf.charge, notes: cf.context, analysis_json: result }
+      caseData: {
+        client_name: cf.name,
+        charge: cf.charge,
+        notes: cf.context || '',
+        analysis_json: result,
+        // Pass key elements as notes so contradictions engine can find them
+        prosecution_weaknesses_text: (result.prosecution_weaknesses || []).join('\n'),
+        context: `Client: ${cf.name}. Charge: ${cf.charge}. Tribunal: ${cf.court}. Contexte: ${cf.context || 'Aucun'}. Failles identifiées: ${(result.prosecution_weaknesses || []).join(' | ')}`
+      }
     },
     timeline: {
       caseId: caseId || 'direct',
