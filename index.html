@@ -328,6 +328,43 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       <button class="btn-auth" id="regBtn" onclick="doRegister()">Créer mon compte gratuit</button>
       <a href="https://kasemind.fr" class="auth-back">← Retour à kasemind.fr</a>
     </div>
+
+    <!-- CLIENT ACCESS CARD -->
+    <div id="authClient" class="auth-card" style="display:none">
+      <div class="auth-title">Espace Client</div>
+      <div class="auth-sub">Entrez le code transmis par votre avocat</div>
+      <div class="auth-error" id="clientError"></div>
+      <div class="form-group" style="margin-top:8px">
+        <label class="form-label">Votre code d'accès</label>
+        <input class="form-input" id="clientCode" placeholder="KM-XXXX" maxlength="7" style="text-transform:uppercase;text-align:center;font-size:22px;font-family:'Cormorant Garamond',serif;letter-spacing:6px" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <button class="btn-auth" id="clientBtn" onclick="doClientAccess()">Accéder à mon dossier</button>
+      <a class="auth-back" onclick="switchAuthTab('login')" style="cursor:pointer">← Retour à la connexion</a>
+    </div>
+
+    <!-- CLIENT RESULT VIEW -->
+    <div id="authClientView" style="display:none;width:100%;max-width:560px;position:relative;z-index:10;animation:fadeUp .5s ease">
+      <div class="auth-logo">
+        <div class="auth-logo-icon">K</div>
+        <div class="auth-logo-name"><span>Kase</span>Mind</div>
+      </div>
+      <div id="clientViewContent"></div>
+      <div style="text-align:center;margin-top:16px">
+        <a class="auth-back" onclick="switchAuthTab('login')" style="cursor:pointer">← Retour</a>
+      </div>
+    </div>
+
+    <!-- CLIENT LINK shown below login -->
+    <div id="clientAccessLink" style="margin-top:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div>
+        <span style="font-size:11px;color:rgba(255,255,255,.25)">ou</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div>
+      </div>
+      <button onclick="switchAuthTab('client')" style="width:100%;padding:13px;background:rgba(201,168,76,.08);border:1.5px solid rgba(201,168,76,.3);border-radius:10px;color:var(--gold);font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='rgba(201,168,76,.15)'" onmouseout="this.style.background='rgba(201,168,76,.08)'">
+        👤 Vous êtes client ? Accéder à votre dossier
+      </button>
+    </div>
   </div>
 </div>
 
@@ -355,7 +392,13 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
         <span class="nav-icon">📁</span>Mes dossiers
         <span class="nav-badge" id="casesBadge">0</span>
       </button>
+      <button class="nav-item" id="nav-timeline" onclick="setPage('timeline')">
+        <span class="nav-icon">📅</span>Audiences & délais
+      </button>
       <div class="nav-section">Compte</div>
+      <button class="nav-item" id="nav-rgpd" onclick="setPage('rgpd')">
+        <span class="nav-icon">🔒</span>RGPD & Conformité
+      </button>
       <button class="nav-item" id="nav-settings" onclick="setPage('settings')">
         <span class="nav-icon">⚙️</span>Paramètres
       </button>
@@ -451,6 +494,10 @@ function setLang(l) {
 function switchAuthTab(tab) {
   document.getElementById('authLogin').style.display = tab==='login' ? 'block' : 'none';
   document.getElementById('authRegister').style.display = tab==='register' ? 'block' : 'none';
+  document.getElementById('authClient').style.display = tab==='client' ? 'block' : 'none';
+  document.getElementById('authClientView').style.display = tab==='clientview' ? 'block' : 'none';
+  const linkEl = document.getElementById('clientAccessLink');
+  if (linkEl) linkEl.style.display = (tab==='login'||tab==='register') ? 'block' : 'none';
 }
 
 // ===== AUTH =====
@@ -538,7 +585,7 @@ async function doRegister() {
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
 
     if (error) {
-      succEl.textContent = '✅ Compte créé ! Connectez-vous maintenant.';
+      succEl.textContent = '✅ Compte créé ! Vérifiez votre email pour confirmer votre inscription.';
       succEl.style.display = 'block';
       btn.disabled = false;
       btn.textContent = 'Créer mon compte gratuit';
@@ -623,6 +670,123 @@ async function doLogout() {
   toast(t('toastLogout'), 'i');
 }
 
+// ===== CLIENT ACCESS (public — no login needed) =====
+async function doClientAccess() {
+  const code = document.getElementById('clientCode').value.trim().toUpperCase();
+  const errEl = document.getElementById('clientError');
+  const btn = document.getElementById('clientBtn');
+  errEl.style.display = 'none';
+
+  if (!code || code.length < 4) {
+    errEl.textContent = 'Veuillez entrer votre code d\'accès.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Vérification...';
+
+  try {
+    const resp = await fetch(`${API}/api/cases/client-access`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      errEl.textContent = data.error || 'Code invalide ou expiré.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Accéder à mon dossier';
+      return;
+    }
+
+    const c = data.case;
+    const exp = data.expires_at ? new Date(data.expires_at).toLocaleDateString('fr-FR') : '';
+    const ex = c.client_explanation || {};
+
+    document.getElementById('clientViewContent').innerHTML = `
+    <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px;backdrop-filter:blur(20px);color:white">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);margin-bottom:4px">${c.client_name||'Votre dossier'}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:20px">${c.charge||''} ${c.court?'· '+c.court:''} ${c.hearing_date?'· Audience: '+new Date(c.hearing_date).toLocaleDateString('fr-FR'):''}</div>
+
+      ${c.risk_level?`<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;margin-bottom:20px;${c.risk_level==='high'?'background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)':c.risk_level==='medium'?'background:rgba(217,119,6,.15);color:#fcd34d;border:1px solid rgba(217,119,6,.3)':'background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)'}">
+        ${c.risk_level==='high'?'⚠️ Situation sérieuse':c.risk_level==='medium'?'⚡ Situation modérée':'✓ Situation favorable'}
+      </div>`:''}
+
+      ${ex.what_happened?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">📋 Ce qui se passe</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.what_happened}</div>`:''}
+      ${ex.what_it_means?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">⚖️ Ce que cela signifie</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.what_it_means}</div>`:''}
+      ${ex.what_lawyer_does?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">🛡️ Ce que fait votre avocat</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.what_lawyer_does}</div>`:''}
+      ${ex.what_to_expect?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">🔮 À quoi s'attendre</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.what_to_expect}</div>`:''}
+      ${ex.advice?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">💡 Conseils</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.advice}</div>`:''}
+
+      <div style="font-size:10px;color:rgba(255,255,255,.2);text-align:center;margin-top:8px">Accès valable jusqu'au ${exp} · KaseMind</div>
+    </div>`;
+
+    switchAuthTab('clientview');
+
+  } catch(e) {
+    errEl.textContent = 'Erreur de connexion. Réessayez.';
+    errEl.style.display = 'block';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Accéder à mon dossier';
+}
+
+// ===== GENERATE CLIENT CODE (lawyer uses this after analysis) =====
+async function generateClientCode(caseId) {
+  const token = currentSession?.access_token || localStorage.getItem('km_token');
+  if (!token) { toast('Non connecté', 'e'); return; }
+
+  if (!caseId || caseId === 'new' || caseId === undefined) {
+    toast(lang==='fr'?'Sauvegardez le dossier d\'abord (💾)':'Save the case first (💾)', 'e');
+    return;
+  }
+
+  const btn = document.getElementById('clientCodeBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Génération...'; }
+
+  try {
+    const resp = await fetch(`${API}/api/cases/${caseId}/client-code`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ expiryDays: 30 })
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      toast(data.error || 'Erreur', 'e');
+      if (btn) { btn.disabled = false; btn.textContent = `🔑 ${lang==='fr'?'Générer le code':'Generate code'}`; }
+      return;
+    }
+
+    const codeBox = document.getElementById('clientCodeDisplay');
+    if (codeBox) {
+      codeBox.innerHTML = `
+        <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:16px;text-align:center;margin-top:14px;border:1px solid rgba(201,168,76,.2)">
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Code généré pour <strong style="color:var(--gold)">${cf.name||'votre client'}</strong></div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--gold);letter-spacing:8px;margin-bottom:8px">${data.code}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:14px">Valable 30 jours · Le client entre ce code sur app.kasemind.fr</div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+            <button onclick="navigator.clipboard.writeText('${data.code}').then(()=>toast('Code copié !','s'))" style="padding:8px 16px;background:var(--gold);border:none;border-radius:6px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer">📋 Copier</button>
+            <button onclick="navigator.clipboard.writeText('Bonjour, voici votre code d\\'accès KaseMind pour consulter votre dossier : ${data.code} — Rendez-vous sur app.kasemind.fr').then(()=>toast('Message copié !','s'))" style="padding:8px 16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">💬 Copier message WhatsApp</button>
+          </div>
+        </div>`;
+    }
+  } catch(e) {
+    toast('Erreur lors de la génération', 'e');
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = `🔑 ${lang==='fr'?'Générer le code':'Generate code'}`; }
+}
+
 // ===== SHOW APP =====
 function showApp() {
   document.getElementById('screen-auth').classList.remove('active');
@@ -703,6 +867,8 @@ function setPage(page) {
   else if (page === 'analyze') renderAnalyze(content);
   else if (page === 'cases') renderCases(content);
   else if (page === 'settings') renderSettings(content);
+  else if (page === 'timeline') renderTimeline(content);
+  else if (page === 'rgpd') renderRGPD(content);
 }
 
 // ===== DASHBOARD =====
@@ -1130,7 +1296,33 @@ function renderResultHTML(r) {
     <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
       <button class="btn btn-navy" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:''};setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
       <button class="btn btn-gold" onclick="saveCase()">💾 ${lang==='fr'?'Sauvegarder':'Save'}</button>
+      <button class="btn" onclick="exportToPDF()">📄 PDF</button>
       <button class="btn" onclick="window.print()">🖨️</button>
+    </div>
+
+    <div style="margin-top:20px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px">⚡ Actions IA avancées</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:14px">
+        <button onclick="runMotionAction('crossExam',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">🎯 Contre-interrogatoire</button>
+        <button onclick="runMotionAction('motion',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">📝 Rédiger la plaidoirie</button>
+        <button onclick="runMotionAction('contradictions',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">⚡ Détecter contradictions</button>
+        <button onclick="runMotionAction('timeline',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">📅 Timeline procédurale</button>
+      </div>
+      <div id="motionResult"></div>
+    </div>
+
+    <div id="reanalysis-section" style="margin-top:16px;background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:12px;padding:20px;border:1px solid rgba(201,168,76,.2)">
+      <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">🔄 Nouvelles preuves — Mettre à jour le dossier</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:12px">${lang==='fr'?`Ajoutez de nouvelles informations pour relancer l'analyse complète`:'Add new information to re-run the full analysis'}</div>
+      <textarea id="newEvidence" placeholder="Ex: Nouveau témoin qui contredit le PV. Certificat médical obtenu. La victime a retiré sa plainte. Nouvelle expertise ADN disponible..." style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;color:white;font-family:'Outfit',sans-serif;font-size:13px;outline:none;min-height:80px;resize:vertical;margin-bottom:10px;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"></textarea>
+      <button onclick="doReAnalysis()" style="padding:10px 20px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🔄 ${lang==='fr'?'Re-analyser avec ces nouvelles informations':'Re-analyze with new information'}</button>
+    </div>
+
+    <div style="margin-top:12px">
+      <button id="clientCodeBtn" onclick="generateClientCode(window._currentCaseId)" style="width:100%;padding:12px;background:rgba(201,168,76,.08);border:1.5px solid rgba(201,168,76,.3);border-radius:8px;color:var(--gold);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer" onmouseover="this.style.background='rgba(201,168,76,.15)'" onmouseout="this.style.background='rgba(201,168,76,.08)'">
+        🔑 ${lang==='fr'?`Générer code client pour ${cf.name||'ce client'}`:'Generate client access code'}
+      </button>
+      <div id="clientCodeDisplay"></div>
     </div>
   </div>
 
@@ -1181,6 +1373,7 @@ async function saveCase() {
       if (resp.ok) {
         const data = await resp.json();
         cases.unshift(data.case);
+        window._currentCaseId = data.case?.id;
         updateCasesBadge();
         toast(t('toastSaved'), 's');
         return;
@@ -1275,6 +1468,409 @@ function renderSettings(container) {
       </div>
     </div>
   </div>`;
+}
+
+// ===== TIMELINE PAGE =====
+function renderTimeline(container) {
+  const upcoming = cases
+    .filter(c => c.hearing_date)
+    .sort((a,b) => new Date(a.hearing_date) - new Date(b.hearing_date));
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  container.innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">📅 ${lang==='fr'?'Audiences & délais':'Hearings & deadlines'}</div>
+      <div class="page-sub">${upcoming.length} ${lang==='fr'?'audience(s) programmée(s)':'scheduled hearing(s)'}</div>
+    </div>
+    <button class="btn btn-gold" onclick="setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
+  </div>
+  <div class="page-content">
+    ${!upcoming.length ? `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">${lang==='fr'?'Aucune audience programmée':'No hearings scheduled'}</div><p class="empty-sub">${lang==='fr'?'Les audiences apparaîtront ici dès qu\'une date est fixée':'Hearings will appear here once a date is set'}</p></div>` :
+    upcoming.map(c => {
+      const hDate = new Date(c.hearing_date);
+      const diffMs = hDate - today;
+      const diffDays = Math.ceil(diffMs / (1000*60*60*24));
+      const isUrgent = diffDays <= 3 && diffDays >= 0;
+      const isPast = diffDays < 0;
+      const urgencyColor = isPast ? 'var(--muted)' : isUrgent ? 'var(--danger)' : diffDays <= 7 ? 'var(--warn)' : 'var(--success)';
+      const urgencyBg = isPast ? 'var(--border)' : isUrgent ? 'var(--danger-light)' : diffDays <= 7 ? 'var(--warn-light)' : 'var(--success-light)';
+      const label = isPast ? 'Passée' : diffDays === 0 ? "Aujourd'hui !" : diffDays === 1 ? 'Demain !' : `Dans ${diffDays} jours`;
+
+      return `<div class="card" style="margin-bottom:12px;padding:18px 22px;border-left:4px solid ${urgencyColor}">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600">${c.client_name||c.name||'—'}</div>
+              <div style="background:${urgencyBg};color:${urgencyColor};font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px">${label}</div>
+            </div>
+            <div style="font-size:12px;color:var(--muted)">${c.charge||'—'} · ${c.court||'—'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:${urgencyColor}">${hDate.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</div>
+            <button class="btn btn-sm" style="margin-top:6px" onclick="openCaseForReanalysis('${c.id||''}','${(c.client_name||'').replace(/'/g,"\\'")}','${(c.charge||'').replace(/'/g,"\\'")}','${(c.court||'').replace(/'/g,"\\'")}','${c.hearing_date||''}')">
+              📋 Ouvrir le dossier
+            </button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ===== RGPD PAGE =====
+function renderRGPD(container) {
+  container.innerHTML = `
+  <div class="page-header">
+    <div class="page-title">🔒 ${lang==='fr'?'RGPD & Conformité':'GDPR & Compliance'}</div>
+  </div>
+  <div class="page-content">
+    <div class="card" style="margin-bottom:16px;border-left:4px solid var(--success)">
+      <div class="card-header"><div class="card-title">✓ ${lang==='fr'?'Conformité RGPD':'GDPR Compliance'}</div></div>
+      <div class="card-body">
+        ${[
+          ['🏛️ Hébergement EU', 'Toutes les données sont hébergées en Europe (Supabase Frankfurt, Germany — eu-central-1). Aucune donnée n\'est transférée hors de l\'Union Européenne.'],
+          ['🔐 Chiffrement AES-256', 'Toutes les communications sont chiffrées via TLS 1.3. Les données en base de données sont chiffrées au repos avec AES-256.'],
+          ['🤐 Secret professionnel', 'KaseMind respecte le secret professionnel de l\'avocat (art. 66-5 de la loi du 31 décembre 1971). Vos données de dossier ne sont jamais utilisées pour entraîner des modèles d\'IA.'],
+          ['📋 Collecte minimale', 'Seules les données strictement nécessaires au fonctionnement du service sont collectées conformément au principe de minimisation des données (art. 5 RGPD).'],
+          ['🗑️ Droit à l\'effacement', 'Vous pouvez demander la suppression complète de votre compte et de vos données à tout moment via les paramètres ou par email à privacy@kasemind.fr.'],
+          ['🔍 Transparence IA', 'KaseMind utilise Claude (Anthropic) pour l\'analyse juridique. Les résultats doivent être vérifiés par l\'avocat conformément aux obligations déontologiques du CNB.']
+        ].map(([title, text]) => `
+          <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:700;min-width:180px;color:var(--navy)">${title}</div>
+            <div style="font-size:13px;color:var(--muted);line-height:1.7">${text}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><div class="card-title">⚖️ ${lang==='fr'?'Conformité CNB (Conseil National des Barreaux)':'CNB Compliance'}</div></div>
+      <div class="card-body">
+        <div style="background:var(--gold-light);border-radius:8px;padding:14px 16px;margin-bottom:14px;border-left:3px solid var(--gold)">
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px">Avertissement déontologique obligatoire</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7">Conformément à la grille d'évaluation du CNB (octobre 2025) et au RIN, les résultats générés par KaseMind constituent une assistance à la recherche juridique. L'avocat a l'obligation déontologique de vérifier l'exactitude de toute jurisprudence et de tout argument avant de les utiliser devant une juridiction.</div>
+        </div>
+        ${[
+          ['✓ Sources officielles uniquement', 'Judilibre (Cour de Cassation) + Légifrance — aucune source non vérifiée'],
+          ['✓ Pas de vente de données', 'Les données clients et dossiers ne sont jamais vendues ou partagées avec des tiers'],
+          ['✓ Audit trail', 'Chaque analyse est horodatée et traçable'],
+          ['✓ Données non utilisées pour l\'IA', 'Vos dossiers n\'entraînent aucun modèle d\'IA']
+        ].map(([title, text]) => `
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:700;color:var(--success);min-width:220px">${title}</div>
+            <div style="font-size:13px;color:var(--muted)">${text}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">📧 Contact DPO</div></div>
+      <div class="card-body">
+        <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:12px">Pour toute question relative à vos données personnelles, exercice de vos droits RGPD (accès, rectification, effacement, portabilité), ou signalement d'incident de sécurité:</p>
+        <div style="font-size:13px;font-weight:600;color:var(--navy)">📧 privacy@kasemind.fr</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Délai de réponse: 72 heures ouvrées</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== OPEN CASE FOR RE-ANALYSIS =====
+function openCaseForReanalysis(caseId, clientName, charge, court, hearingDate) {
+  window._currentCaseId = caseId;
+  cf = { name: clientName, charge, court, date: hearingDate, context: '' };
+  result = null;
+  setPage('analyze');
+  setTimeout(() => {
+    const reanalysisSection = document.getElementById('reanalysis-section');
+    if (reanalysisSection) reanalysisSection.scrollIntoView({ behavior: 'smooth' });
+  }, 300);
+}
+
+// ===== ACTION BUTTONS (cross-exam, motion, contradictions) =====
+async function runMotionAction(action, caseId) {
+  const token = currentSession?.access_token || localStorage.getItem('km_token');
+  if (!token || !caseId) {
+    toast(lang==='fr'?'Sauvegardez le dossier d\'abord':'Save the case first', 'e');
+    return;
+  }
+
+  const container = document.getElementById('motionResult');
+  if (container) {
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)"><div class="spinner" style="margin:0 auto 12px;width:28px;height:28px;border-width:2px"></div>KaseMind analyse...</div>`;
+  }
+
+  const endpoints = {
+    crossExam: '/api/motions/cross-examination',
+    motion: '/api/motions/draft',
+    contradictions: '/api/motions/contradictions',
+    timeline: '/api/motions/timeline'
+  };
+
+  const bodies = {
+    crossExam: { caseId, witnessType: 'Témoin principal / Agent de police' },
+    motion: { caseId, motionType: 'relaxe' },
+    contradictions: { caseId },
+    timeline: { caseId }
+  };
+
+  try {
+    const resp = await fetch(`${API}${endpoints[action]}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(bodies[action])
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) { toast(data.error || 'Erreur', 'e'); return; }
+
+    renderMotionResult(action, data.result, container);
+  } catch(e) {
+    toast('Erreur de connexion', 'e');
+    if (container) container.innerHTML = '';
+  }
+}
+
+function renderMotionResult(action, r, container) {
+  if (!container || !r) return;
+
+  if (action === 'crossExam') {
+    container.innerHTML = `
+    <div style="margin-top:16px">
+      <div class="section-label">🎯 Contre-interrogatoire — ${r.witness_profile||'Témoin'}</div>
+      <div style="background:var(--gold-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;border-left:3px solid var(--gold);font-size:13px;color:var(--text)">${r.strategy||''}</div>
+      ${(r.blocks||[]).map((b,i) => `
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Bloc ${i+1}: ${b.objective}</div>
+          ${(b.questions||[]).map((q,qi) => `<div style="font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:10px"><span style="color:var(--gold);font-weight:700;flex-shrink:0">Q${qi+1}.</span>${q}</div>`).join('')}
+          ${b.expected_impact?`<div style="font-size:11px;color:var(--success);margin-top:8px">Impact attendu: ${b.expected_impact}</div>`:''}
+        </div>
+      `).join('')}
+      ${r.closing_move?`<div style="background:var(--navy);color:var(--gold);border-radius:8px;padding:14px;font-size:13px;font-weight:600"><span style="opacity:.5;font-size:10px;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Question finale</span>${r.closing_move}</div>`:''}
+    </div>`;
+  }
+
+  else if (action === 'motion') {
+    container.innerHTML = `
+    <div style="margin-top:16px">
+      <div class="section-label">📝 ${r.motion_type||'Plaidoirie'} — ${r.estimated_duration||''}</div>
+      <div style="background:var(--gold-light);border-radius:10px;padding:20px;border-left:4px solid var(--gold);font-size:14px;line-height:2;white-space:pre-wrap;font-family:'Cormorant Garamond',serif">${r.full_text||''}</div>
+      ${r.delivery_notes?.length?`
+        <div style="margin-top:14px;background:var(--bg);border-radius:8px;padding:12px 16px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Conseils de prononciation</div>
+          ${r.delivery_notes.map(n=>`<div style="font-size:12px;color:var(--text);padding:4px 0;border-bottom:1px solid var(--border)">→ ${n}</div>`).join('')}
+        </div>
+      `:''}
+      <button class="btn btn-navy" style="margin-top:12px" onclick="copyToClipboard('${(r.full_text||'').replace(/'/g,"\\'").replace(/\n/g,'\\n')}')">📋 Copier la plaidoirie</button>
+    </div>`;
+  }
+
+  else if (action === 'contradictions') {
+    const all = [...(r.high_impact||[]), ...(r.medium_impact||[])];
+    container.innerHTML = `
+    <div style="margin-top:16px">
+      <div class="section-label">⚡ ${r.total_contradictions||all.length} contradiction(s) identifiée(s)</div>
+      ${r.overall_assessment?`<div style="background:var(--bg);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--text);line-height:1.7">${r.overall_assessment}</div>`:''}
+      ${all.map(c=>`
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:8px;border-left:3px solid ${c.impact==='high'?'var(--danger)':'var(--warn)'}">
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px">${c.impact==='high'?'🔴':'🟡'} ${c.title||'Contradiction'}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+            <div style="background:rgba(220,38,38,.05);border-radius:6px;padding:8px;font-size:12px"><div style="font-weight:700;color:var(--danger);margin-bottom:3px">Source A</div>${c.element_A||''}</div>
+            <div style="background:rgba(22,163,74,.05);border-radius:6px;padding:8px;font-size:12px"><div style="font-weight:700;color:var(--success);margin-bottom:3px">Source B</div>${c.element_B||''}</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);font-style:italic;margin-bottom:6px">${c.contradiction||''}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--navy)">→ ${c.how_to_exploit||''}</div>
+        </div>
+      `).join('')}
+      ${(r.procedural_issues||[]).map(p=>`
+        <div style="background:rgba(220,38,38,.05);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:4px">⚠️ Problème procédural: ${p.issue}</div>
+          <div style="font-size:12px;color:var(--muted)">${p.legal_basis} — ${p.consequence}</div>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+
+  else if (action === 'timeline') {
+    container.innerHTML = `
+    <div style="margin-top:16px">
+      <div class="section-label">📅 Timeline procédurale</div>
+      ${r.next_critical_deadline?`
+        <div style="background:var(--danger-light);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px 16px;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Prochaine échéance critique</div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy)">${r.next_critical_deadline.event}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">${r.next_critical_deadline.date} — ${r.next_critical_deadline.days_remaining} jours — ${r.next_critical_deadline.action}</div>
+        </div>
+      `:''}
+      ${(r.timeline||[]).map(item=>`
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;background:${item.status==='past'?'var(--muted)':item.status==='current'?'var(--gold)':item.status==='critical'?'var(--danger)':'var(--success)'}"></div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:${item.status==='current'||item.status==='critical'?'700':'400'};color:var(--navy)">${item.event}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${item.date}${item.action_required?' — '+item.action_required:''}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => toast('Copié !', 's'));
+}
+
+// ===== PDF EXPORT =====
+async function exportToPDF() {
+  if (!result) { toast('Aucune analyse à exporter', 'e'); return; }
+
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) {
+    toast('Chargement du module PDF...', 'i');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  }
+
+  const doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageW = 210;
+  const margin = 20;
+  const contentW = pageW - margin * 2;
+  let y = 20;
+
+  const addLine = (text, fontSize=10, isBold=false, color=[10,22,40]) => {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(text, contentW);
+    lines.forEach(line => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.text(line, margin, y);
+      y += fontSize * 0.45;
+    });
+    y += 2;
+  };
+
+  const addSection = (title, content) => {
+    if (!content) return;
+    y += 4;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFillColor(201, 168, 76);
+    doc.rect(margin, y, contentW, 0.5, 'F');
+    y += 4;
+    addLine(title.toUpperCase(), 9, true, [201, 168, 76]);
+    if (typeof content === 'string') addLine(content, 10, false, [60, 60, 60]);
+    else if (Array.isArray(content)) content.forEach(item => addLine(`• ${typeof item === 'string' ? item : item.text || item.article || JSON.stringify(item)}`, 10, false, [60, 60, 60]));
+    y += 2;
+  };
+
+  // HEADER
+  doc.setFillColor(10, 22, 40);
+  doc.rect(0, 0, pageW, 35, 'F');
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(201, 168, 76);
+  doc.text('KaseMind', margin, 18);
+  doc.setFontSize(9);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Assistant Juridique IA — Analyse de Dossier Pénal', margin, 25);
+  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} — Confidentiel — Secret Professionnel`, margin, 31);
+
+  y = 45;
+
+  // Case info
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(10, 22, 40);
+  doc.text(cf.name || 'Analyse', margin, y); y += 8;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  if (cf.charge) { doc.text(`Charge: ${cf.charge}`, margin, y); y += 5; }
+  if (cf.court) { doc.text(`Tribunal: ${cf.court}`, margin, y); y += 5; }
+  if (cf.date) { doc.text(`Date d'audience: ${cf.date}`, margin, y); y += 5; }
+  y += 5;
+
+  // Risk score
+  const score = result.risk_score || 50;
+  const riskColor = result.risk_level === 'high' ? [220,38,38] : result.risk_level === 'medium' ? [217,119,6] : [22,163,74];
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...riskColor);
+  doc.text(`Niveau de risque: ${score}% — ${result.risk_level === 'high' ? 'ÉLEVÉ' : result.risk_level === 'medium' ? 'MODÉRÉ' : 'FAIBLE'}`, margin, y);
+  y += 8;
+
+  addSection('Résumé du dossier', result.summary);
+  addSection('Analyse des charges', result.charges_analysis);
+  addSection('Explication du risque', result.risk_explanation);
+  addSection('Failles de l\'accusation', result.prosecution_weaknesses);
+  addSection('Points favorables à la défense', result.defense_strengths);
+  if (result.specific_articles?.length) addSection('Articles applicables', result.specific_articles.map(a => `${a.article}: ${a.how_to_use}`));
+  if (result.jurisprudence?.length) addSection('Jurisprudence', result.jurisprudence.map(j => `${j.ref}: ${j.how_to_use}`));
+  if (result.strategies?.length) addSection('Stratégie de défense', result.strategies.map(s => `${s.title}: ${s.text}`));
+  if (result.motion_elements?.opening_argument) addSection('Plaidoirie d\'ouverture', result.motion_elements.opening_argument);
+  addSection('Actions immédiates', result.what_to_do_now);
+
+  // FOOTER
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`KaseMind — Analyse confidentielle — Page ${i}/${totalPages} — Vérifier les sources avant utilisation`, margin, 290);
+  }
+
+  doc.save(`KaseMind_${(cf.name||'dossier').replace(/\s/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`);
+  toast('PDF exporté !', 's');
+}
+
+async function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// ===== RE-ANALYSIS =====
+async function doReAnalysis() {
+  const newEvidence = document.getElementById('newEvidence')?.value?.trim();
+  if (!newEvidence) { toast(lang==='fr'?'Décrivez les nouvelles preuves':'Describe the new evidence', 'e'); return; }
+  if (!window._currentCaseId) { toast(lang==='fr'?'Sauvegardez le dossier d\'abord':'Save the case first', 'e'); return; }
+
+  const token = currentSession?.access_token || localStorage.getItem('km_token');
+  const btn = document.querySelector('#reanalysis-section button');
+  if (btn) { btn.disabled = true; btn.textContent = '🔄 Re-analyse en cours...'; }
+
+  const analyzeContent = document.getElementById('analyzeContent');
+  if (analyzeContent) renderLoading(analyzeContent);
+
+  try {
+    const resp = await fetch(`${API}/api/analyze/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ caseId: window._currentCaseId, newEvidence })
+    });
+
+    const data = await resp.json();
+    if (!resp.ok || !data.result) { toast(data.error || 'Erreur', 'e'); return; }
+
+    result = data.result;
+    toast(lang==='fr'?'Dossier mis à jour avec les nouvelles preuves !':'Case updated with new evidence!', 's');
+
+    if (analyzeContent) {
+      analyzeContent.innerHTML = renderResultHTML(result);
+      setTimeout(() => {
+        const fill = document.getElementById('riskFill');
+        if (fill) fill.style.width = (result.risk_score || 45) + '%';
+      }, 100);
+    }
+  } catch(e) {
+    toast('Erreur de connexion', 'e');
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = `🔄 ${lang==='fr'?'Re-analyser avec ces nouvelles informations':'Re-analyze with new information'}`; }
 }
 
 // ===== TOAST =====
