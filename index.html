@@ -1022,10 +1022,10 @@ function renderAnalyze(container) {
     <div class="lf-bar">${lfStat}<div class="lf-bar-sub">PISTE API · OAuth 2.0 · Sécurisé</div></div>
 
     <div class="upload-zone" id="uploadZone">
-      <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="handleFiles(this.files)">
-      <div style="font-size:36px;margin-bottom:10px;opacity:.5">📄</div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;margin-bottom:4px">${lang==='fr'?'Déposez vos documents':'Drop your documents'}</div>
-      <div style="font-size:12px;color:var(--muted)">PDF, Word, images</div>
+      <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.tiff,.txt" onchange="handleFiles(this.files)">
+      <div style="font-size:36px;margin-bottom:10px;opacity:.5">📎</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;margin-bottom:4px">${lang==='fr'?'Déposez vos documents du dossier':'Drop your case documents'}</div>
+      <div style="font-size:12px;color:var(--muted)">PDF · Word (.docx) · Images (JPG, PNG) · TXT · Jusqu'à 20 fichiers</div>
     </div>
     <div id="fileList" style="margin-bottom:12px"></div>
 
@@ -1060,13 +1060,37 @@ function renderAnalyze(container) {
 }
 
 function handleFiles(fileList) {
-  Array.from(fileList).forEach(f => files.push(f));
+  Array.from(fileList).forEach(f => {
+    if (f.size > 20 * 1024 * 1024) {
+      toast(`${f.name} est trop grand (max 20MB)`, 'e');
+      return;
+    }
+    files.push(f);
+  });
   renderFileList();
 }
+
 function renderFileList() {
   const el = document.getElementById('fileList');
   if (!el) return;
-  el.innerHTML = files.map((f,i) => `<span style="display:inline-flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;margin:4px">📄 ${f.name} <span style="cursor:pointer;color:var(--light)" onclick="files.splice(${i},1);renderFileList()">✕</span></span>`).join('');
+  if (!files.length) { el.innerHTML = ''; return; }
+
+  const icons = { pdf: '📄', docx: '📝', doc: '📝', txt: '📋', jpg: '🖼️', jpeg: '🖼️', png: '🖼️', tiff: '🖼️' };
+  const getIcon = name => icons[name.split('.').pop().toLowerCase()] || '📎';
+  const getSize = size => size > 1024*1024 ? `${(size/1024/1024).toFixed(1)}MB` : `${Math.round(size/1024)}KB`;
+
+  el.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${files.length} document(s) sélectionné(s)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${files.map((f,i) => `
+        <div style="display:inline-flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px">
+          <span>${getIcon(f.name)}</span>
+          <span style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+          <span style="color:var(--muted)">${getSize(f.size)}</span>
+          <span style="cursor:pointer;color:var(--danger);font-weight:700" onclick="files.splice(${i},1);renderFileList()">✕</span>
+        </div>
+      `).join('')}
+    </div>`;
 }
 
 // ===== ANALYZE FUNCTION =====
@@ -1150,6 +1174,40 @@ async function doAnalyze() {
 
   addFeed('📝 Analyse IA en cours...');
 
+  // Process uploaded files via backend
+  let documentContext = '';
+  if (files.length > 0) {
+    addFeed(`📎 Traitement de ${files.length} document(s)...`);
+    try {
+      const formData = new FormData();
+      files.forEach(f => formData.append('files', f));
+
+      const docResp = await fetch(`${API}/api/documents/extract`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${currentSession?.access_token || localStorage.getItem('km_token') || ''}` },
+        body: formData
+      });
+
+      if (docResp.ok) {
+        const docData = await docResp.json();
+        if (docData.combinedText) {
+          documentContext = `\n\nDOCUMENTS DU DOSSIER (${docData.filesProcessed} fichier(s), ${Math.round(docData.totalChars/1000)}k caractères):\n${docData.combinedText}`;
+          addFeed(`✅ ${docData.filesProcessed} document(s) traité(s) — ${Math.round(docData.totalChars/1000)}k caractères extraits`, 'done');
+
+          // Show file processing results
+          docData.files.forEach(f => {
+            addFeed(`📄 ${f.filename}: ${f.pages} page(s)${f.wasChunked ? ' (résumé)' : ''}`, 'done');
+          });
+          if (docData.errors?.length) {
+            docData.errors.forEach(e => addFeed(`⚠️ ${e.file}: ${e.error}`, 'done'));
+          }
+        }
+      }
+    } catch(e) {
+      addFeed('⚠️ Erreur traitement documents — analyse sans documents', 'done');
+    }
+  }
+
   // Build prompt
   const lfCtx = lfResults.length
     ? '\n\nRÉSULTATS LÉGIFRANCE:\n' + lfResults.slice(0,3).map((r,i) => `${i+1}. ${r.titre||r.title||'Article'}: ${r.extraits?.[0]||''}`).join('\n')
@@ -1164,7 +1222,7 @@ async function doAnalyze() {
 - Tribunal: ${cf.court||'Non spécifié'}
 - Date audience: ${cf.date||'Non spécifiée'}
 - Contexte et faits: ${cf.context||'Aucun contexte fourni'}
-${lfCtx}${judCtx}`;
+${lfCtx}${judCtx}${documentContext}`;
 
   let aiResult = null;
   const _authTok = currentSession?.access_token || localStorage.getItem('km_token') || '';
