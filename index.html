@@ -425,6 +425,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       </button>
     </div>
     <div class="sidebar-bottom">
+      <!-- Trial countdown -->
+      <div id="trialBanner" style="display:none;background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.05));border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:10px 12px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">⏰ Essai gratuit</div>
+        <div id="trialDaysText" style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:8px">14 jours restants</div>
+        <a href="https://app.kasemind.fr/?upgrade=true" onclick="setPage('settings')" style="display:block;text-align:center;padding:6px;background:var(--gold);border-radius:6px;color:var(--navy);font-size:11px;font-weight:700;text-decoration:none;cursor:pointer">Passer au plan payant</a>
+      </div>
       <div class="lf-status-sidebar">
         <div class="lf-row">
           <div class="lf-dot" id="lfDot" style="background:#4ade80"></div>
@@ -880,6 +886,7 @@ async function loadCases() {
 function updateCasesBadge() {
   const badge = document.getElementById('casesBadge');
   if (badge) badge.textContent = cases.length;
+  updateTrialBanner();
 }
 
 // ===== PAGES =====
@@ -1407,9 +1414,16 @@ function renderResultHTML(r) {
 
     <div id="reanalysis-section" style="margin-top:16px;background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:12px;padding:20px;border:1px solid rgba(201,168,76,.2)">
       <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">🔄 Nouvelles preuves — Mettre à jour le dossier</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:12px">${lang==='fr'?`Ajoutez de nouvelles informations pour relancer l'analyse complète`:'Add new information to re-run the full analysis'}</div>
-      <textarea id="newEvidence" placeholder="Ex: Nouveau témoin qui contredit le PV. Certificat médical obtenu. La victime a retiré sa plainte. Nouvelle expertise ADN disponible..." style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;color:white;font-family:'Outfit',sans-serif;font-size:13px;outline:none;min-height:80px;resize:vertical;margin-bottom:10px;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"></textarea>
-      <button onclick="doReAnalysis()" style="padding:10px 20px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🔄 ${lang==='fr'?'Re-analyser avec ces nouvelles informations':'Re-analyze with new information'}</button>
+      <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:12px">${lang==='fr'?`Ajoutez de nouvelles informations ou documents pour relancer l'analyse complète`:'Add new information or documents to re-run the full analysis'}</div>
+      <textarea id="newEvidence" placeholder="Ex: Nouveau témoin qui contredit le PV. Certificat médical obtenu. La victime a retiré sa plainte..." style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;color:white;font-family:'Outfit',sans-serif;font-size:13px;outline:none;min-height:70px;resize:vertical;margin-bottom:10px;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"></textarea>
+      <div style="margin-bottom:10px">
+        <div onclick="document.getElementById('reFileInput').click()" style="border:1.5px dashed rgba(255,255,255,.2);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:rgba(255,255,255,.4);transition:all .2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='rgba(255,255,255,.2)'">
+          📎 ${lang==='fr'?'Ajouter de nouveaux documents (PDF, Word, images)':'Add new documents (PDF, Word, images)'}
+        </div>
+        <input type="file" id="reFileInput" multiple accept=".pdf,.docx,.doc,.txt,.jpg,.jpeg,.png" style="display:none" onchange="handleReFiles(this.files)">
+        <div id="reFileList" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
+      <button onclick="doReAnalysis()" style="padding:10px 20px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🔄 ${lang==='fr'?'Re-analyser':'Re-analyze'}</button>
     </div>
 
     <div style="margin-top:12px">
@@ -1716,6 +1730,14 @@ function renderTimeline(container) {
     <button class="btn btn-gold" onclick="setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
   </div>
   <div class="page-content">
+    <div style="background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.03));border:1px solid rgba(201,168,76,.2);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:24px">📱</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--navy)">Notifications WhatsApp — Bientôt disponible</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Recevez un message WhatsApp automatique 1, 3 et 7 jours avant chaque audience. Activez les notifications dans Paramètres.</div>
+      </div>
+      <div style="flex-shrink:0;padding:4px 10px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:999px;font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px">Bientôt</div>
+    </div>
     ${!upcoming.length ? `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">${lang==='fr'?'Aucune audience programmée':'No hearings scheduled'}</div><p class="empty-sub">${lang==='fr'?'Les audiences apparaîtront ici dès qu\'une date est fixée':'Hearings will appear here once a date is set'}</p></div>` :
     upcoming.map(c => {
       const hDate = new Date(c.hearing_date);
@@ -1967,6 +1989,22 @@ function renderMotionResult(action, r, container) {
   }
 }
 
+function handleReFiles(fileList) {
+  window._reAnalysisFiles = window._reAnalysisFiles || [];
+  Array.from(fileList).forEach(f => {
+    if (f.size > 20 * 1024 * 1024) { toast(`${f.name} trop grand (max 20MB)`, 'e'); return; }
+    window._reAnalysisFiles.push(f);
+  });
+  const el = document.getElementById('reFileList');
+  if (el) {
+    el.innerHTML = (window._reAnalysisFiles || []).map((f,i) =>
+      `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border-radius:6px;padding:4px 8px;font-size:11px;color:rgba(255,255,255,.7)">
+        📄 ${f.name} <span onclick="window._reAnalysisFiles.splice(${i},1);handleReFiles([])" style="cursor:pointer;color:var(--danger)">✕</span>
+      </div>`
+    ).join('');
+  }
+}
+
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(() => toast('Copié !', 's'));
 }
@@ -2082,15 +2120,111 @@ async function loadScript(src) {
   });
 }
 
-// ===== RE-ANALYSIS =====
+// ===== TRIAL COUNTDOWN =====
+function updateTrialBanner() {
+  const banner = document.getElementById('trialBanner');
+  const daysText = document.getElementById('trialDaysText');
+  if (!banner || !currentFirm) return;
+
+  const plan = currentFirm.plan || 'trial';
+  const trialEnds = currentFirm.trial_ends_at;
+
+  if (plan === 'trial' && trialEnds) {
+    const daysLeft = Math.ceil((new Date(trialEnds) - new Date()) / (1000*60*60*24));
+    banner.style.display = 'block';
+
+    if (daysLeft <= 0) {
+      daysText.textContent = 'Essai expiré — abonnez-vous pour continuer';
+      daysText.style.color = 'var(--danger)';
+      banner.style.borderColor = 'rgba(220,38,38,.4)';
+      banner.style.background = 'rgba(220,38,38,.1)';
+    } else if (daysLeft <= 3) {
+      daysText.textContent = `⚠️ ${daysLeft} jour(s) restant(s) !`;
+      daysText.style.color = '#fbbf24';
+    } else {
+      daysText.textContent = `${daysLeft} jour(s) d'essai restants`;
+    }
+  } else if (plan === 'solo' || plan === 'cabinet') {
+    banner.style.display = 'none';
+  }
+}
+
+// ===== PAYWALL (trial expired) =====
+function checkPaywall() {
+  if (!currentFirm) return false;
+  const plan = currentFirm.plan || 'trial';
+  const trialEnds = currentFirm.trial_ends_at;
+  if (plan === 'trial' && trialEnds) {
+    const daysLeft = Math.ceil((new Date(trialEnds) - new Date()) / (1000*60*60*24));
+    if (daysLeft <= 0) return true;
+  }
+  return false;
+}
+
+function showPaywall(container) {
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;min-height:60vh">
+      <div style="text-align:center;max-width:480px;padding:40px">
+        <div style="font-size:48px;margin-bottom:16px">⏰</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;margin-bottom:12px">Votre essai gratuit est terminé</div>
+        <div style="font-size:15px;color:var(--muted);margin-bottom:32px;line-height:1.7">Vos dossiers sont conservés. Choisissez un plan pour continuer à utiliser KaseMind.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center">
+            <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Solo</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600">€99<span style="font-size:14px;color:var(--muted)">/mois</span></div>
+            <div style="font-size:12px;color:var(--muted);margin:8px 0">1 avocat · Analyses illimitées</div>
+            <a href="https://buy.stripe.com/YOUR_SOLO_LINK" target="_blank" style="display:block;padding:10px;background:var(--gold);border-radius:8px;color:var(--navy);font-weight:700;font-size:13px;text-decoration:none;margin-top:12px">S'abonner</a>
+          </div>
+          <div style="background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.03));border:1px solid rgba(201,168,76,.3);border-radius:12px;padding:20px;text-align:center;position:relative">
+            <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--navy);font-size:9px;font-weight:800;padding:3px 12px;border-radius:999px;text-transform:uppercase;letter-spacing:1px;white-space:nowrap">Bientôt</div>
+            <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cabinet</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600">€299<span style="font-size:14px;color:var(--muted)">/mois</span></div>
+            <div style="font-size:12px;color:var(--muted);margin:8px 0">5 avocats · Tout inclus</div>
+            <div style="padding:10px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:8px;color:var(--gold);font-size:12px;margin-top:12px">Disponible prochainement</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">Questions ? <a href="mailto:support@kasemind.fr" style="color:var(--gold)">support@kasemind.fr</a></div>
+      </div>
+    </div>`;
+}
+
+// ===== RE-ANALYSIS WITH FILES =====
 async function doReAnalysis() {
   const newEvidence = document.getElementById('newEvidence')?.value?.trim();
-  if (!newEvidence) { toast(lang==='fr'?'Décrivez les nouvelles preuves':'Describe the new evidence', 'e'); return; }
-  if (!window._currentCaseId) { toast(lang==='fr'?'Sauvegardez le dossier d\'abord':'Save the case first', 'e'); return; }
+  const reFiles = window._reAnalysisFiles || [];
+
+  if (!newEvidence && reFiles.length === 0) {
+    toast(lang==='fr'?'Décrivez les nouvelles preuves ou ajoutez des documents':'Add new evidence or documents', 'e');
+    return;
+  }
+  if (!window._currentCaseId) {
+    toast(lang==='fr'?'Sauvegardez le dossier d\'abord':'Save the case first', 'e');
+    return;
+  }
 
   const token = currentSession?.access_token || localStorage.getItem('km_token');
-  const btn = document.querySelector('#reanalysis-section button');
+  const btn = document.querySelector('#reanalysis-section button[onclick="doReAnalysis()"]');
   if (btn) { btn.disabled = true; btn.textContent = '🔄 Re-analyse en cours...'; }
+
+  // Process new files if any
+  let newDocContext = '';
+  if (reFiles.length > 0) {
+    try {
+      const formData = new FormData();
+      reFiles.forEach(f => formData.append('files', f));
+      const docResp = await fetch(`${API}/api/documents/extract`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      if (docResp.ok) {
+        const docData = await docResp.json();
+        if (docData.combinedText) {
+          newDocContext = `\n\nNOUVEAUX DOCUMENTS:\n${docData.combinedText}`;
+        }
+      }
+    } catch(e) {}
+  }
 
   const analyzeContent = document.getElementById('analyzeContent');
   if (analyzeContent) renderLoading(analyzeContent);
@@ -2099,14 +2233,18 @@ async function doReAnalysis() {
     const resp = await fetch(`${API}/api/analyze/update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ caseId: window._currentCaseId, newEvidence })
+      body: JSON.stringify({
+        caseId: window._currentCaseId,
+        newEvidence: (newEvidence || '') + newDocContext
+      })
     });
 
     const data = await resp.json();
     if (!resp.ok || !data.result) { toast(data.error || 'Erreur', 'e'); return; }
 
     result = data.result;
-    toast(lang==='fr'?'Dossier mis à jour avec les nouvelles preuves !':'Case updated with new evidence!', 's');
+    window._reAnalysisFiles = [];
+    toast(lang==='fr'?'Dossier mis à jour !':'Case updated!', 's');
 
     if (analyzeContent) {
       analyzeContent.innerHTML = renderResultHTML(result);
@@ -2119,7 +2257,7 @@ async function doReAnalysis() {
     toast('Erreur de connexion', 'e');
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = `🔄 ${lang==='fr'?'Re-analyser avec ces nouvelles informations':'Re-analyze with new information'}`; }
+  if (btn) { btn.disabled = false; btn.textContent = `🔄 ${lang==='fr'?'Re-analyser':'Re-analyze'}`; }
 }
 
 // ===== FORGOT PASSWORD =====
