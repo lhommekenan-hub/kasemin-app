@@ -406,7 +406,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       <button class="nav-item active" id="nav-dashboard" onclick="setPage('dashboard')">
         <span class="nav-icon">🏠</span>Tableau de bord
       </button>
-      <button class="nav-item" id="nav-analyze" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:''};window._currentCaseId=null;setPage('analyze')">
+      <button class="nav-item" id="nav-analyze" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:'',profile:{casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''},charges:[]};window._currentCaseId=null;setPage('analyze')">
         <span class="nav-icon">🔍</span>Analyser un dossier
       </button>
       <button class="nav-item" id="nav-cases" onclick="setPage('cases')">
@@ -479,7 +479,7 @@ let currentSession = null;
 let cases = [];
 let result = null;
 let files = [];
-let cf = { name:'', charge:'', court:'', date:'', context:'' };
+let cf = { name:'', charge:'', court:'', date:'', context:'', profile:{ casier:'', condamnations:'', sursis:'', autresDossiers:'', situationPerso:'' }, charges:[] };
 let currentPage = 'dashboard';
 let lfConnected = false;
 
@@ -774,7 +774,7 @@ async function doClientAccess() {
 // ===== GENERATE CLIENT CODE (lawyer uses this after analysis) =====
 async function generateClientCode(caseId) {
   const token = currentSession?.access_token || localStorage.getItem('km_token');
-  if (!token) { toast('Non connecté', 'e'); return; }
+  if (!token) { toast("Non connecté", "e"); return; }
 
   if (!caseId || caseId === 'new' || caseId === undefined) {
     toast(lang==='fr'?'Sauvegardez le dossier d\'abord (💾)':'Save the case first (💾)', 'e');
@@ -1000,7 +1000,7 @@ function renderDashboard(container) {
     row.className = 'case-row';
     row.innerHTML = `<div class="case-row-icon">⚖️</div><div class="case-row-info"><div class="case-row-name">${c.client_name||c.name}</div><div class="case-row-meta">${c.charge||'—'} · ${c.hearing_date||c.date||'—'}</div></div>${rp}`;
     row.onclick = () => {
-      cf = { name:c.client_name||c.name, charge:c.charge||'', court:c.court||'', date:c.hearing_date||c.date||'', context:'' };
+      cf = { name:c.client_name||c.name, charge:c.charge||'', court:c.court||'', date:c.hearing_date||c.date||'', context:'', profile: c.client_profile || {casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''}, charges: c.charges_json || [] };
       result = c.result || null;
       setPage('analyze');
     };
@@ -1045,6 +1045,89 @@ function renderAnalyze(container) {
         <div class="fg"><label>${lang==='fr'?'Date d\'audience':'Hearing date'}</label><input type="date" id="cfDate" value="${cf.date}" oninput="cf.date=this.value"></div>
       </div>
       <div class="fg" style="margin-bottom:16px"><label>${lang==='fr'?'Contexte':'Context'}</label><textarea id="cfCtx" placeholder="${lang==='fr'?'Contexte additionnel...':'Additional context...'}" oninput="cf.context=this.value">${cf.context}</textarea></div>
+
+      <div id="chargesToggle" onclick="toggleCharges()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;cursor:pointer;margin-bottom:12px;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.07)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">⚖️</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.85)">${lang==='fr'?'Chefs de prévention multiples':'Multiple charges'}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">${lang==='fr'?'Ajouter plusieurs infractions au même dossier — analyse cumul de peines':'Add multiple offenses — cumulative sentence analysis'}</div>
+          </div>
+        </div>
+        <div id="chargesChevron" style="color:rgba(255,255,255,.4);font-size:14px;font-weight:700;transition:transform .25s">▼</div>
+      </div>
+
+      <div id="chargesSection" style="display:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:16px">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">${lang==='fr'?'Le chef principal ci-dessus est automatiquement inclus':'Main charge above is automatically included'}</div>
+        <div id="chargesList" style="margin-bottom:12px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+          <div class="fg" style="margin-bottom:0">
+            <label>${lang==='fr'?'Infraction supplémentaire':'Additional offense'}</label>
+            <input id="newChargeLabel" placeholder="${lang==='fr'?'Ex: Recel aggravé Art. 321-2 CP':'E.g. Aggravated handling stolen goods'}" style="width:100%">
+          </div>
+          <div class="fg" style="margin-bottom:0">
+            <label>${lang==='fr'?'Peine maximale':'Max sentence'}</label>
+            <input id="newChargeMax" placeholder="${lang==='fr'?'Ex: 5 ans + 75 000€':'E.g. 5 years + €75,000'}" style="width:100%">
+          </div>
+          <button onclick="addCharge()" style="padding:10px 14px;background:rgba(201,168,76,.15);border:1.5px solid rgba(201,168,76,.4);border-radius:8px;color:var(--gold);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;height:42px">+ Ajouter</button>
+        </div>
+      </div>
+
+      <div id="profileToggle" onclick="toggleProfile()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(201,168,76,.06);border:1.5px solid rgba(201,168,76,.2);border-radius:10px;cursor:pointer;margin-bottom:12px;transition:all .2s" onmouseover="this.style.background='rgba(201,168,76,.1)'" onmouseout="this.style.background='rgba(201,168,76,.06)'">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">👤</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--gold)">${lang==='fr'?'Profil du client':'Client profile'}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">${lang==='fr'?'Casier, antécédents, situation — adapte toute l\'analyse':'Criminal record, history, situation — shapes the entire analysis'}</div>
+          </div>
+        </div>
+        <div id="profileChevron" style="color:var(--gold);font-size:14px;font-weight:700;transition:transform .25s">▼</div>
+      </div>
+
+      <div id="profileSection" style="display:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:16px">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px">⚖️ ${lang==='fr'?'Ces informations modifient en profondeur la stratégie de défense':'This information deeply shapes the defense strategy'}</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="fg">
+            <label>${lang==='fr'?'Casier judiciaire':'Criminal record'}</label>
+            <select id="cfCasier" oninput="cf.profile.casier=this.value" style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:white;font-family:'Outfit',sans-serif;font-size:13px;outline:none">
+              <option value="" style="background:#1a1a2e">${lang==='fr'?'Sélectionner...':'Select...'}</option>
+              <option value="vierge" style="background:#1a1a2e">${lang==='fr'?'Casier vierge (B1 vide)':'Clean record'}</option>
+              <option value="mention_effacee" style="background:#1a1a2e">${lang==='fr'?'Mentions effacées':'Mentions cleared'}</option>
+              <option value="condamnations_mineure" style="background:#1a1a2e">${lang==='fr'?'Condamnations mineures':'Minor convictions'}</option>
+              <option value="condamnations_grave" style="background:#1a1a2e">${lang==='fr'?'Condamnations graves':'Serious convictions'}</option>
+              <option value="recidive" style="background:#1a1a2e">${lang==='fr'?'En état de récidive légale':'Legal recidivism'}</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>${lang==='fr'?'Sursis en cours':'Active suspended sentence'}</label>
+            <select id="cfSursis" oninput="cf.profile.sursis=this.value" style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:white;font-family:'Outfit',sans-serif;font-size:13px;outline:none">
+              <option value="" style="background:#1a1a2e">${lang==='fr'?'Sélectionner...':'Select...'}</option>
+              <option value="aucun" style="background:#1a1a2e">${lang==='fr'?'Aucun sursis':'No suspended sentence'}</option>
+              <option value="sme" style="background:#1a1a2e">SME ${lang==='fr'?'en cours':'in progress'}</option>
+              <option value="sme_probation" style="background:#1a1a2e">SME + ${lang==='fr'?'probation':'probation'}</option>
+              <option value="sme_risque_revocation" style="background:#1a1a2e">${lang==='fr'?'SME — risque de révocation':'SME — revocation risk'}</option>
+              <option value="sursis_revoque" style="background:#1a1a2e">${lang==='fr'?'Sursis déjà révoqué':'Suspended sentence revoked'}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="fg" style="margin-bottom:12px">
+          <label>${lang==='fr'?'Condamnations antérieures (détail)':'Prior convictions (detail)'}</label>
+          <textarea id="cfCondamnations" placeholder="${lang==='fr'?'Ex: Condamné en 2021 pour vol simple — 6 mois sursis. Condamné en 2023 pour violences — 1 an ferme...':'E.g.: Convicted 2021 for theft — 6 months suspended. Convicted 2023 for assault — 1 year firm...'}" oninput="cf.profile.condamnations=this.value" style="min-height:70px">${cf.profile.condamnations||''}</textarea>
+        </div>
+
+        <div class="fg" style="margin-bottom:12px">
+          <label>${lang==='fr'?'Autres dossiers en cours':'Other pending cases'}</label>
+          <textarea id="cfAutresDossiers" placeholder="${lang==='fr'?'Ex: Mis en examen pour escroquerie (TGI Basse-Terre, audience mars 2026). Convocation pour stupéfiants...':'E.g.: Under investigation for fraud (TGI Basse-Terre, hearing March 2026). Summons for narcotics...'}" oninput="cf.profile.autresDossiers=this.value" style="min-height:70px">${cf.profile.autresDossiers||''}</textarea>
+        </div>
+
+        <div class="fg">
+          <label>${lang==='fr'?'Situation personnelle (pour la peine)':'Personal situation (for sentencing)'}</label>
+          <textarea id="cfSituationPerso" placeholder="${lang==='fr'?'Ex: Père de 3 enfants, emploi stable depuis 5 ans, logement propre, suivi médical en cours, ressources mensuelles 1800€...':'E.g.: Father of 3 children, stable job 5 years, own housing, ongoing medical follow-up, monthly income €1800...'}" oninput="cf.profile.situationPerso=this.value" style="min-height:70px">${cf.profile.situationPerso||''}</textarea>
+        </div>
+      </div>
+
       <button class="btn btn-gold" style="width:100%;justify-content:center;padding:14px" onclick="doAnalyze()">${t('analyzeBtn')}</button>
     </div>
     ${result ? renderResultHTML(result) : ''}
@@ -1101,12 +1184,251 @@ function renderFileList() {
 }
 
 // ===== ANALYZE FUNCTION =====
+// ===== MULTIPLE CHARGES =====
+function toggleCharges() {
+  const sec = document.getElementById('chargesSection');
+  const chev = document.getElementById('chargesChevron');
+  const open = sec.style.display === 'none';
+  sec.style.display = open ? 'block' : 'none';
+  chev.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+function addCharge() {
+  const label = document.getElementById('newChargeLabel');
+  const max = document.getElementById('newChargeMax');
+  if (!label || !label.value.trim()) { toast("Saisissez un chef d'infraction", 'e'); return; }
+  if (!cf.charges) cf.charges = [];
+  cf.charges.push({ label: label.value.trim(), maxSentence: max.value.trim(), status: 'en cours' });
+  label.value = '';
+  max.value = '';
+  renderChargesList();
+}
+
+function removeCharge(i) {
+  if (!cf.charges) return;
+  cf.charges.splice(i, 1);
+  renderChargesList();
+}
+
+function renderChargesList() {
+  const el = document.getElementById('chargesList');
+  if (!el) return;
+  if (!cf.charges || cf.charges.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:6px 0">Aucun chef supplémentaire — seul le chef principal sera analysé.</div>';
+    return;
+  }
+  el.innerHTML = cf.charges.map((ch, i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border-radius:8px;padding:8px 12px;margin-bottom:6px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.9)">${ch.label}</div>
+        ${ch.maxSentence ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">Max: ' + ch.maxSentence + '</div>' : ''}
+      </div>
+      <button onclick="removeCharge(${i})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px">✕</button>
+    </div>
+  `).join('');
+}
+
+// ===== CRPC PLEA BARGAIN =====
+let crpcCharges = [];
+
+function openCRPC() {
+  if (!result) { toast("Analysez un dossier d'abord", 'e'); return; }
+  const panel = document.getElementById('crpcPanel');
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  crpcCharges = [];
+  renderCRPCChargesList();
+  // Pre-populate with case charges if any
+  if (cf.charges && cf.charges.length > 0) {
+    crpcCharges = cf.charges.map(ch => ({ label: ch.label, penalty: '' }));
+    renderCRPCChargesList();
+  }
+  if (panel.style.display === 'block') {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function addCRPCCharge() {
+  const label = document.getElementById('crpcChargeLabel');
+  const penalty = document.getElementById('crpcChargePenalty');
+  if (!label || !label.value.trim()) { toast("Saisissez un chef d'infraction", 'e'); return; }
+  crpcCharges.push({ label: label.value.trim(), penalty: penalty.value.trim() });
+  label.value = '';
+  penalty.value = '';
+  renderCRPCChargesList();
+}
+
+function removeCRPCCharge(i) {
+  crpcCharges.splice(i, 1);
+  renderCRPCChargesList();
+}
+
+function renderCRPCChargesList() {
+  const el = document.getElementById('crpcChargesList');
+  if (!el) return;
+  if (crpcCharges.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = crpcCharges.map((ch, i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border-radius:6px;padding:7px 10px;margin-bottom:5px">
+      <div style="flex:1;font-size:12px;color:rgba(255,255,255,.8)">${ch.label}${ch.penalty ? ' — <span style="color:var(--gold)">' + ch.penalty + '</span>' : ''}</div>
+      <button onclick="removeCRPCCharge(${i})" style="background:none;border:none;color:var(--danger);font-size:14px;cursor:pointer">✕</button>
+    </div>
+  `).join('');
+}
+
+async function runCRPC() {
+  const text = document.getElementById('crpcText')?.value?.trim();
+  if (!text || text.length < 20) { toast("Collez le texte de la CRPC", 'e'); return; }
+  const token = currentSession?.access_token || localStorage.getItem('km_token');
+  if (!token) { toast("Non connecté", "e"); return; }
+
+  const crpcResult = document.getElementById('crpcResult');
+  if (crpcResult) crpcResult.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)"><div class="spinner" style="margin:0 auto 12px;width:24px;height:24px;border-width:2px"></div>KaseMind analyse la CRPC...</div>';
+
+  const allCharges = [];
+  // Add main charge
+  if (cf.charge) allCharges.push({ label: cf.charge, maxSentence: '', status: 'en cours' });
+  // Add extra charges from the case
+  if (cf.charges && cf.charges.length > 0) cf.charges.forEach(ch => allCharges.push(ch));
+  // Add CRPC-specific charges
+  crpcCharges.forEach(ch => { if (!allCharges.find(x => x.label === ch.label)) allCharges.push({ label: ch.label, maxSentence: ch.penalty, status: 'couvert par CRPC' }); });
+
+  try {
+    const resp = await fetch(`${API}/api/motions/crpc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        caseId: window._currentCaseId || 'direct',
+        crpcText: text,
+        charges: allCharges,
+        caseData: { client_name: cf.name, charge: cf.charge, court: cf.court, hearing_date: cf.date, analysis_json: result, client_profile: cf.profile || null }
+      })
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.result) { toast(data.error || 'Erreur CRPC', 'e'); if(crpcResult) crpcResult.innerHTML = ''; return; }
+    renderCRPCResult(data.result, crpcResult);
+  } catch(e) {
+    toast('Erreur de connexion', 'e');
+    if (crpcResult) crpcResult.innerHTML = '';
+  }
+}
+
+function renderCRPCResult(r, container) {
+  if (!container || !r) return;
+  const verdictColors = { ACCEPTER: '#16a34a', NEGOCIER: '#d97706', REFUSER: '#dc2626' };
+  const verdictLabels = { ACCEPTER: '✅ ACCEPTER', NEGOCIER: '🔶 NÉGOCIER', REFUSER: '❌ REFUSER' };
+  const verdict = r.verdict || 'NEGOCIER';
+  const scoreColor = r.overall_score >= 70 ? '#16a34a' : r.overall_score >= 45 ? '#d97706' : '#dc2626';
+
+  container.innerHTML = `
+    <div style="margin-top:4px">
+
+      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:rgba(0,0,0,.2);border-radius:10px;padding:16px;margin-bottom:14px;border:2px solid ${verdictColors[verdict] || '#d97706'}">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Verdict KaseMind</div>
+          <div style="font-size:22px;font-weight:800;color:${verdictColors[verdict] || '#d97706'}">${verdictLabels[verdict] || verdict}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.75);margin-top:8px;line-height:1.6">${r.verdict_explanation || ''}</div>
+        </div>
+        <div style="text-align:center;flex-shrink:0">
+          <div style="font-size:36px;font-weight:800;color:${scoreColor};font-family:'Cormorant Garamond',serif">${r.overall_score || '—'}</div>
+          <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px">/ 100</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">qualité offre</div>
+        </div>
+      </div>
+
+      ${r.proposed_sentence ? `
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">📋 Peine proposée</div>
+        <div style="font-size:14px;font-weight:600;color:rgba(255,255,255,.9);margin-bottom:8px">${r.proposed_sentence.summary || ''}</div>
+        ${r.proposed_sentence.imprisonment ? '<div style="font-size:12px;color:rgba(255,255,255,.6);padding:3px 0">🔒 Emprisonnement: ' + r.proposed_sentence.imprisonment + '</div>' : ''}
+        ${r.proposed_sentence.fine ? '<div style="font-size:12px;color:rgba(255,255,255,.6);padding:3px 0">💶 Amende: ' + r.proposed_sentence.fine + '</div>' : ''}
+        ${r.proposed_sentence.other ? '<div style="font-size:12px;color:rgba(255,255,255,.6);padding:3px 0">📌 Autres: ' + r.proposed_sentence.other + '</div>' : ''}
+      </div>` : ''}
+
+      ${r.compared_to_trial ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div style="background:rgba(22,163,74,.07);border:1px solid rgba(22,163,74,.2);border-radius:8px;padding:12px">
+          <div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Avantage CRPC</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.75);line-height:1.5">${r.compared_to_trial.crpc_advantage || ''}</div>
+        </div>
+        <div style="background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px">
+          <div style="font-size:10px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Risque procès</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.75);line-height:1.5">${r.compared_to_trial.trial_risk || ''}</div>
+        </div>
+      </div>` : ''}
+
+      ${r.charges_analysis && r.charges_analysis.length > 0 ? `
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Analyse par chef de prévention</div>
+        ${r.charges_analysis.map(ch => {
+          const aColor = ch.assessment === 'favorable' ? '#16a34a' : ch.assessment === 'defavorable' ? '#dc2626' : '#d97706';
+          const aLabel = ch.assessment === 'favorable' ? '✅ Favorable' : ch.assessment === 'defavorable' ? '❌ Défavorable' : '🔶 Neutre';
+          return `<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.85);margin-bottom:4px">${ch.charge || ''}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.5)">Proposé: <span style="color:var(--gold)">${ch.proposed_penalty || '—'}</span> · Marché: ${ch.market_rate || '—'}</div>
+              ${ch.comment ? '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;font-style:italic">' + ch.comment + '</div>' : ''}
+            </div>
+            <div style="font-size:11px;font-weight:700;color:${aColor};text-align:right;white-space:nowrap">${aLabel}</div>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+      ${r.key_points && r.key_points.length > 0 ? `
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Points clés à comprendre</div>
+        ${r.key_points.map(kp => {
+          const kColor = kp.type === 'warning' ? 'rgba(220,38,38,.1)' : kp.type === 'positive' ? 'rgba(22,163,74,.1)' : 'rgba(255,255,255,.04)';
+          const kBorder = kp.type === 'warning' ? 'rgba(220,38,38,.25)' : kp.type === 'positive' ? 'rgba(22,163,74,.25)' : 'rgba(255,255,255,.1)';
+          const kIcon = kp.type === 'warning' ? '⚠️' : kp.type === 'positive' ? '✅' : 'ℹ️';
+          return `<div style="background:${kColor};border:1px solid ${kBorder};border-radius:8px;padding:10px 12px;margin-bottom:6px">
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.85);margin-bottom:3px">${kIcon} ${kp.point || ''}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.6);line-height:1.5">${kp.explanation || ''}</div>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+      ${r.negotiation_levers && r.negotiation_levers.length > 0 ? `
+      <div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px">🎯 Leviers de négociation</div>
+        ${r.negotiation_levers.map(lev => '<div style="font-size:12px;color:rgba(255,255,255,.8);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06);line-height:1.5">→ ' + lev + '</div>').join('')}
+      </div>` : ''}
+
+      ${r.what_to_tell_client ? `
+      <div style="background:var(--navy);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">💬 Ce que vous dites à votre client</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.7;font-family:'Cormorant Garamond',serif">${r.what_to_tell_client}</div>
+      </div>` : ''}
+
+      ${r.deadline_warning ? `
+      <div style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);border-radius:8px;padding:10px 14px">
+        <div style="font-size:12px;font-weight:700;color:#dc2626">⏰ ${r.deadline_warning}</div>
+      </div>` : ''}
+
+    </div>`;
+}
+
+function toggleProfile() {
+  const sec = document.getElementById('profileSection');
+  const chev = document.getElementById('profileChevron');
+  const open = sec.style.display === 'none';
+  sec.style.display = open ? 'block' : 'none';
+  chev.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
 async function doAnalyze() {
   cf.name = document.getElementById('cfName')?.value || '';
   cf.charge = document.getElementById('cfCharge')?.value || '';
   cf.court = document.getElementById('cfCourt')?.value || '';
   cf.date = document.getElementById('cfDate')?.value || '';
   cf.context = document.getElementById('cfCtx')?.value || '';
+  cf.profile = {
+    casier: document.getElementById('cfCasier')?.value || '',
+    sursis: document.getElementById('cfSursis')?.value || '',
+    condamnations: document.getElementById('cfCondamnations')?.value || '',
+    autresDossiers: document.getElementById('cfAutresDossiers')?.value || '',
+    situationPerso: document.getElementById('cfSituationPerso')?.value || ''
+  };
+  if (!cf.charges) cf.charges = [];
 
   if (!cf.charge && !cf.name) {
     toast(lang==='fr'?'Veuillez remplir le nom du client et la charge.':'Please fill in client name and charge.', 'e');
@@ -1223,12 +1545,33 @@ async function doAnalyze() {
     ? '\n\nRÉSULTATS JUDILIBRE:\n' + judResults.slice(0,3).map((r,i) => `${i+1}. ${r.chamber||''} ${r.decision_date||''}: ${r.sommaire||r.text?.slice(0,200)||''}`).join('\n')
     : '';
 
+  const casierMap = {vierge:"Casier vierge (B1 vide)",mention_effacee:"Mentions effacées",condamnations_mineure:"Condamnations mineures",condamnations_grave:"Condamnations graves",recidive:"EN ÉTAT DE RÉCIDIVE LÉGALE"};
+  const sursisMap = {aucun:"Aucun sursis",sme:"SME en cours",sme_probation:"SME + probation",sme_risque_revocation:"SME avec risque de révocation",sursis_revoque:"Sursis déjà révoqué"};
+  const hasProfile = cf.profile && (cf.profile.casier || cf.profile.condamnations || cf.profile.sursis || cf.profile.autresDossiers || cf.profile.situationPerso);
+  let profileBlock = "";
+  if (hasProfile) {
+    const p = cf.profile;
+    let speciales = "";
+    if (p.casier === "recidive") speciales += "\n- RECIDIVE LEGALE: Adapter le risk_score (minimum 75). Les peines planchers sont applicables. Cibler requalification ou vice de procedure.";
+    if (p.sursis && (p.sursis.includes("revoc") || p.sursis === "sme_risque_revocation")) speciales += "\n- SURSIS MENACE: Les strategies doivent traiter la gestion du sursis existant. La revocation est un enjeu aussi grave que le chef actuel.";
+    if (p.autresDossiers) speciales += "\n- AUTRES DOSSIERS EN COURS: Analyser les risques de cumul de peines et jonction de procedures dans what_to_do_now.";
+    if (p.situationPerso) speciales += "\n- ELEMENTS FAVORABLES: Utiliser la situation personnelle dans defense_strengths et what_to_say pour plaider une peine alternative.";
+    profileBlock = "\n\nPROFIL PENAL DU CLIENT (IMPACT DIRECT SUR LA STRATEGIE):" +
+      "\n- Casier judiciaire: " + (casierMap[p.casier] || p.casier || "Non renseigne") +
+      "\n- Sursis en cours: " + (sursisMap[p.sursis] || p.sursis || "Non renseigne") +
+      "\n- Condamnations anterieures: " + (p.condamnations || "Non renseignees") +
+      "\n- Autres dossiers en cours: " + (p.autresDossiers || "Aucun") +
+      "\n- Situation personnelle: " + (p.situationPerso || "Non renseignee") +
+      (cf.charges && cf.charges.length > 0 ? "\n- Chefs supplémentaires: " + cf.charges.map(function(ch){return ch.label + (ch.maxSentence?" (max:"+ch.maxSentence+")":"");}).join(", ") : "") +
+      (speciales ? "\n\nINSTRUCTIONS SPECIALES:" + speciales : "");
+  }
+
   const prompt = `DOSSIER À ANALYSER:
 - Client: ${cf.name||'Non spécifié'}
 - Charge: ${cf.charge||'À déterminer'}
 - Tribunal: ${cf.court||'Non spécifié'}
 - Date audience: ${cf.date||'Non spécifiée'}
-- Contexte et faits: ${cf.context||'Aucun contexte fourni'}
+- Contexte et faits: ${cf.context||'Aucun contexte fourni'}${cf.charges && cf.charges.length > 0 ? '\n- Chefs de prévention multiples: ' + cf.charges.map(function(ch,i){return (i+1)+'. '+ch.label+(ch.maxSentence?' (max: '+ch.maxSentence+')':'');}).join('; ') : ''}${profileBlock}
 ${lfCtx}${judCtx}${documentContext}`;
 
   let aiResult = null;
@@ -1240,7 +1583,7 @@ ${lfCtx}${judCtx}${documentContext}`;
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${_authTok}`
       },
-      body: JSON.stringify({ prompt, caseData: cf })
+      body: JSON.stringify({ prompt, caseData: cf, caseId: window._currentCaseId || null, clientProfile: cf.profile || null, charges: cf.charges || [] })
     });
     if (backendResp.ok) {
       const bd = await backendResp.json();
@@ -1395,7 +1738,7 @@ function renderResultHTML(r) {
     ${r.investigate_further?.length?`<div class="section"><div class="section-label">🔎 ${lang==='fr'?'À investiguer':'Investigate further'}</div><ul class="pts-list">${r.investigate_further.map(i=>`<li class="pt pt-info"><span>🔎</span>${i}</li>`).join('')}</ul></div>`:''}
 
     <div style="display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
-      <button class="btn btn-navy" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:''};window._currentCaseId=null;setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
+      <button class="btn btn-navy" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:'',profile:{casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''},charges:[]};window._currentCaseId=null;setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
       <button class="btn btn-gold" onclick="saveCase()">💾 ${lang==='fr'?'Sauvegarder':'Save'}</button>
       <button class="btn" onclick="exportToPDF()">📄 PDF</button>
       <button class="btn" onclick="window.print()">🖨️</button>
@@ -1408,8 +1751,30 @@ function renderResultHTML(r) {
         <button onclick="runMotionAction('motion',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">📝 Rédiger la plaidoirie</button>
         <button onclick="runMotionAction('contradictions',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">⚡ Détecter contradictions</button>
         <button onclick="runMotionAction('timeline',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">📅 Timeline procédurale</button>
+        <button onclick="openCRPC()" style="padding:10px 14px;background:rgba(201,168,76,.12);border:1.5px solid rgba(201,168,76,.35);border-radius:8px;color:var(--gold);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-align:left" onmouseover="this.style.background='rgba(201,168,76,.2)'" onmouseout="this.style.background='rgba(201,168,76,.12)'">📋 Analyser une CRPC</button>
       </div>
       <div id="motionResult"></div>
+
+      <div id="crpcPanel" style="display:none;margin-top:16px;background:var(--card);border:1.5px solid rgba(201,168,76,.3);border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--gold)">Analyser une CRPC</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Comparution sur Reconnaissance Préalable de Culpabilité</div>
+          </div>
+          <button onclick="document.getElementById('crpcPanel').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px">✕</button>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Coller ou saisir les termes de la proposition CRPC</div>
+        <textarea id="crpcText" placeholder="Collez ici le texte de la proposition CRPC — peines proposées, chefs couverts, obligations, délai de réponse..." style="width:100%;min-height:140px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;color:white;font-family:Outfit,sans-serif;font-size:13px;resize:vertical;outline:none;box-sizing:border-box"></textarea>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px">Chefs couverts par cette CRPC (facultatif)</div>
+        <div id="crpcChargesList" style="margin-bottom:10px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:14px;align-items:end">
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Chef d'infraction</label><input id="crpcChargeLabel" placeholder="Ex: Vol aggravé Art. 311-4 CP" style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:white;font-family:Outfit,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Peine proposée</label><input id="crpcChargePenalty" placeholder="Ex: 8 mois sursis" style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:white;font-family:Outfit,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
+          <button onclick="addCRPCCharge()" style="padding:10px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:white;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;cursor:pointer;height:42px">+ Chef</button>
+        </div>
+        <button onclick="runCRPC()" style="width:100%;padding:13px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:Outfit,sans-serif;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.5px">⚖️ Analyser cette CRPC</button>
+        <div id="crpcResult" style="margin-top:16px"></div>
+      </div>
     </div>
 
     <div id="reanalysis-section" style="margin-top:16px;background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:12px;padding:20px;border:1px solid rgba(201,168,76,.2)">
@@ -1475,7 +1840,9 @@ async function saveCase() {
     notes: cf.context,
     riskLevel: result.risk_level,
     riskScore: result.risk_score,
-    analysisJson: result
+    analysisJson: result,
+    clientProfile: cf.profile || null,
+    chargesJson: cf.charges && cf.charges.length > 0 ? cf.charges : null
   };
 
   const _saveTok = currentSession?.access_token || localStorage.getItem('km_token') || '';
@@ -1566,7 +1933,7 @@ function renderCases(container) {
     row.onmouseover = () => row.style.borderColor = 'var(--gold)';
     row.onmouseout = () => row.style.borderColor = 'var(--border)';
     row.onclick = () => {
-      cf = { name:cs.client_name||cs.name, charge:cs.charge||'', court:cs.court||'', date:cs.hearing_date||cs.date||'', context:'' };
+      cf = { name:cs.client_name||cs.name, charge:cs.charge||'', court:cs.court||'', date:cs.hearing_date||cs.date||'', context:'', profile: cs.client_profile || {casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''}, charges: cs.charges_json || [] };
       result = cs.analysis_json || cs.result || null;
       if (cs.id) window._currentCaseId = cs.id;
       setPage('analyze');
@@ -1843,7 +2210,7 @@ function openCaseForReanalysis(caseId, clientName, charge, court, hearingDate) {
 // ===== ACTION BUTTONS (cross-exam, motion, contradictions) =====
 async function runMotionAction(action, caseId) {
   const token = currentSession?.access_token || localStorage.getItem('km_token');
-  if (!token) { toast('Non connecté', 'e'); return; }
+  if (!token) { toast("Non connecté", "e"); return; }
   if (!result) { toast(lang==='fr'?'Analysez un dossier d\'abord':'Analyze a case first', 'e'); return; }
 
   const container = document.getElementById('motionResult');
@@ -1863,12 +2230,12 @@ async function runMotionAction(action, caseId) {
     crossExam: {
       caseId: caseId || 'direct',
       witnessType: 'Témoin principal / Agent de police',
-      caseData: { client_name: cf.name, charge: cf.charge, court: cf.court, analysis_json: result }
+      caseData: { client_name: cf.name, charge: cf.charge, court: cf.court, analysis_json: result, charges_json: cf.charges || [] }
     },
     motion: {
       caseId: caseId || 'direct',
       motionType: 'relaxe',
-      caseData: { client_name: cf.name, charge: cf.charge, court: cf.court, hearing_date: cf.date, analysis_json: result }
+      caseData: { client_name: cf.name, charge: cf.charge, court: cf.court, hearing_date: cf.date, analysis_json: result, charges_json: cf.charges || [] }
     },
     contradictions: {
       caseId: caseId || 'direct',
