@@ -1008,8 +1008,7 @@ function renderDashboard(container) {
               <button class="btn btn-gold" style="width:100%;margin-top:16px;justify-content:center" onclick="startCheckout('solo')">
                 ${lang==='fr'?'Passer à Solo €99/mois':'Upgrade to Solo €99/mo'}
               </button>
-              <button class="btn btn-gold" style="width:100%;margin-top:8px;justify-content:center" onclick="startCheckout('firm')">${lang==='fr'?'Passer à Cabinet €299/mois':'Upgrade to Cabinet €299/mo'}</button>
-              </button>
+
             </div>
           </div>
         </div>
@@ -2041,6 +2040,9 @@ function renderCases(container) {
       cf = { name:cs.client_name||cs.name, charge:cs.charge||'', court:cs.court||'', date:cs.hearing_date||cs.date||'', context:'', profile: cs.client_profile || {casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''}, charges: cs.charges_json || [] };
       result = cs.analysis_json || cs.result || null;
       if (cs.id) window._currentCaseId = cs.id;
+      // If civilian paid for this case, mark it as unlocked for this session
+      if (cs.is_unlocked) window._caseUnlocked = true;
+      else window._caseUnlocked = false;
       setPage('analyze');
     };
     c.appendChild(row);
@@ -2623,6 +2625,8 @@ function updateTrialBanner() {
 
 // ===== PAYWALL (trial expired) =====
 function isCivilian() {
+  // If the current case was paid and unlocked, treat as not-civilian (show full analysis)
+  if (window._caseUnlocked) return false;
   return (currentUser?.userType === 'civilian') || (currentFirm?.user_type === 'civilian');
 }
 
