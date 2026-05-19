@@ -1376,15 +1376,15 @@ function renderChargesList() {
     el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:6px 0">Aucun chef supplémentaire — seul le chef principal sera analysé.</div>';
     return;
   }
-  el.innerHTML = cf.charges.map((ch, i) => `
-    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border-radius:8px;padding:8px 12px;margin-bottom:6px">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.9)">${ch.label}</div>
-        ${ch.maxSentence ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">Max: ' + ch.maxSentence + '</div>' : ''}
-      </div>
-      <button onclick="removeCharge(${i})" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px">✕</button>
-    </div>
-  `).join('');
+  el.innerHTML = cf.charges.map(function(ch, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border-radius:8px;padding:8px 12px;margin-bottom:6px">' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.9)">' + ch.label + '</div>' +
+        (ch.maxSentence ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">Max: ' + ch.maxSentence + '</div>' : '') +
+      '</div>' +
+      '<button onclick="removeCharge(' + i + ')" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px">✕</button>' +
+    '</div>';
+  }).join('');
 }
 
 // ===== CRPC PLEA BARGAIN =====
@@ -1468,12 +1468,12 @@ function renderCRPCChargesList() {
   const el = document.getElementById('crpcChargesList');
   if (!el) return;
   if (crpcCharges.length === 0) { el.innerHTML = ''; return; }
-  el.innerHTML = crpcCharges.map((ch, i) => `
-    <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border-radius:6px;padding:7px 10px;margin-bottom:5px">
-      <div style="flex:1;font-size:12px;color:rgba(255,255,255,.8)">${ch.label}${ch.penalty ? ' — <span style="color:var(--gold)">' + ch.penalty + '</span>' : ''}</div>
-      <button onclick="removeCRPCCharge(${i})" style="background:none;border:none;color:var(--danger);font-size:14px;cursor:pointer">✕</button>
-    </div>
-  `).join('');
+  el.innerHTML = crpcCharges.map(function(ch, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border-radius:6px;padding:7px 10px;margin-bottom:5px">' +
+      '<div style="flex:1;font-size:12px;color:rgba(255,255,255,.8)">' + ch.label + (ch.penalty ? ' — <span style="color:var(--gold)">' + ch.penalty + '</span>' : '') + '</div>' +
+      '<button onclick="removeCRPCCharge(' + i + ')" style="background:none;border:none;color:var(--danger);font-size:14px;cursor:pointer">✕</button>' +
+    '</div>';
+  }).join('');
 }
 
 async function runCRPC() {
@@ -2324,7 +2324,7 @@ function renderSettings(container) {
         </button>
       </div>
     </div>
-  </div>\`;
+  </div>`;
 }
 
 // ===== TIMELINE PAGE =====
@@ -3053,7 +3053,7 @@ function showRatingPrompt() {
         <div style="font-size:13px;color:#64748b;margin-top:4px">Votre avis aide d'autres avocats à découvrir l'outil</div>
       </div>
       <div style="display:flex;justify-content:center;gap:8px;margin-bottom:20px" id="starRow">
-        ${[1,2,3,4,5].map(n => `<span onclick="rateApp(${n})" style="font-size:32px;cursor:pointer;transition:transform .15s;filter:grayscale(1)" onmouseover="hoverStar(${n})" onmouseout="unhoverStar()" id="star${n}">⭐</span>`).join('')}
+        ${[1,2,3,4,5].map(function(n){return '<span onclick="rateApp('+n+')" style="font-size:32px;cursor:pointer;transition:transform .15s;filter:grayscale(1)" onmouseover="hoverStar('+n+')" onmouseout="unhoverStar()" id="star'+n+'">⭐</span>';}).join('')}
       </div>
       <div id="ratingFeedback" style="display:none;margin-bottom:16px">
         <textarea id="ratingComment" placeholder="Optionnel — partagez votre expérience..." style="width:100%;border:1.5px solid #e2e8f4;border-radius:8px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13px;resize:none;min-height:70px;outline:none;box-sizing:border-box;color:#0a1628"></textarea>
@@ -3107,7 +3107,7 @@ async function submitRating() {
   if (score >= 4) {
     toast('Merci pour votre avis ! 🌟', 's');
     setTimeout(() => {
-      if (confirm('Souhaitez-vous laisser un témoignage sur notre site ? Cela aide d'autres avocats à nous trouver.')) {
+      if (confirm("Souhaitez-vous laisser un témoignage sur notre site ? Cela aide d'autres avocats à nous trouver.")) {
         window.open('mailto:hello@kasemind.fr?subject=Témoignage KaseMind&body=Bonjour Kenan,%0D%0A%0D%0AJe suis ' + (currentUser?.first||'') + ' ' + (currentUser?.last||'') + ', avocat. Voici mon témoignage sur KaseMind :%0D%0A%0D%0A[Votre témoignage ici]%0D%0A%0D%0ACordialement', '_blank');
       }
     }, 500);
@@ -3168,17 +3168,25 @@ function renderChangelog(container) {
 
 function renderWelcomeBanner() {
   const name = currentUser?.last || '';
-  return '<div id="welcomeBanner" style="margin:0;background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.04));border-bottom:1px solid rgba(201,168,76,.2);padding:20px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
-    '<div style="font-size:32px">👋</div>' +
+  const div = document.createElement('div');
+  div.id = 'welcomeBanner';
+  div.style.cssText = 'margin:0;background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.04));border-bottom:1px solid rgba(201,168,76,.2);padding:20px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap';
+  div.innerHTML = '<div style="font-size:32px">&#128075;</div>' +
     '<div style="flex:1;min-width:200px">' +
       '<div style="font-size:15px;font-weight:700;color:white;margin-bottom:4px">Bienvenue sur KaseMind, Me ' + name + ' !</div>' +
-      '<div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.6">Commencez par analyser votre premier dossier — KaseMind génère l'analyse complète en 60 secondes.</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.6">Commencez par analyser votre premier dossier en 60 secondes.</div>' +
     '</div>' +
     '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
-      '<button onclick="localStorage.setItem('km_welcomed','1');setPage('analyze')" style="padding:10px 22px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🔍 Analyser mon premier dossier</button>' +
-      '<button onclick="localStorage.setItem('km_welcomed','1');document.getElementById('welcomeBanner').style.display='none'" style="padding:10px 16px;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.4);font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer">Ignorer</button>' +
-    '</div>' +
-  '</div>';
+      '<button id="welcomeStartBtn" style="padding:10px 22px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer">&#128269; Analyser mon premier dossier</button>' +
+      '<button id="welcomeDismissBtn" style="padding:10px 16px;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.4);font-family:Outfit,sans-serif;font-size:12px;cursor:pointer">Ignorer</button>' +
+    '</div>';
+  setTimeout(function() {
+    const startBtn = document.getElementById('welcomeStartBtn');
+    const dismissBtn = document.getElementById('welcomeDismissBtn');
+    if (startBtn) startBtn.onclick = function() { localStorage.setItem('km_welcomed','1'); setPage('analyze'); };
+    if (dismissBtn) dismissBtn.onclick = function() { localStorage.setItem('km_welcomed','1'); div.style.display='none'; };
+  }, 50);
+  return div.outerHTML;
 }
 
 function validateBarNumber(val) {
@@ -3226,7 +3234,7 @@ function legalPage(title, sections) {
     '</div>';
   }).join('');
   return '<div style="max-width:720px;margin:0 auto;padding:24px">' +
-    '<div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:white;margin-bottom:4px">' + title + '</div>' +
+    '<div style="font-family:Cormorant Garamond,serif;font-size:28px;font-weight:600;color:white;margin-bottom:4px">' + title + '</div>' +
     '<div style="font-size:12px;color:var(--muted);margin-bottom:28px">KaseMind — kasemind.fr — Dernière mise à jour: mai 2026</div>' +
     sectionsHTML +
     '<div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);text-align:center">' +
