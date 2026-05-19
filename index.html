@@ -6,6 +6,37 @@
 <title>KaseMind — Application</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Sentry — replace DSN after creating account at sentry.io/signup -->
+<script>
+(function() {
+  var SENTRY_DSN = "SENTRY_DSN_PLACEHOLDER";
+  if (SENTRY_DSN === "SENTRY_DSN_PLACEHOLDER") return; // not configured yet
+  var s = document.createElement("script");
+  s.src = "https://browser.sentry-cdn.com/7.99.0/bundle.min.js";
+  s.crossOrigin = "anonymous";
+  s.onload = function() {
+    Sentry.init({
+      dsn: SENTRY_DSN,
+      environment: "production",
+      release: "kasemind@5.1.0",
+      tracesSampleRate: 0.1,
+      ignoreErrors: [
+        "ResizeObserver loop limit exceeded",
+        "Non-Error promise rejection",
+        "NetworkError"
+      ],
+      beforeSend: function(event) {
+        if (event.user) {
+          delete event.user.email;
+          delete event.user.username;
+        }
+        return event;
+      }
+    });
+  };
+  document.head.appendChild(s);
+})();
+</script>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -979,6 +1010,11 @@ function showApp() {
   checkLFStatus();
   loadCases();
   setPage('dashboard');
+  // If civilian just returned from payment, show rating after a delay
+  if (window._justPaid && isCivilian()) {
+    window._justPaid = false;
+    setTimeout(() => showRatingPrompt(), 8000);
+  }
   // Show changelog badge if user hasn't seen latest version
   const lastSeen = localStorage.getItem('km_changelog_seen');
   if (lastSeen !== '2') {
@@ -2166,8 +2202,12 @@ function renderCases(container) {
       result = cs.analysis_json || cs.result || null;
       if (cs.id) window._currentCaseId = cs.id;
       // If civilian paid for this case, mark it as unlocked for this session
-      if (cs.is_unlocked) window._caseUnlocked = true;
-      else window._caseUnlocked = false;
+      if (cs.is_unlocked) {
+        window._caseUnlocked = true;
+        setTimeout(checkCivilianRating, 2000);
+      } else {
+        window._caseUnlocked = false;
+      }
       setPage('analyze');
     };
     c.appendChild(row);
@@ -2755,6 +2795,15 @@ function isCivilian() {
   return (currentUser?.userType === 'civilian') || (currentFirm?.user_type === 'civilian');
 }
 
+function checkCivilianRating() {
+  // Show rating to civilians after they unlock their case
+  if (!isCivilian()) return;
+  if (localStorage.getItem('km_rated')) return;
+  if (localStorage.getItem('km_civilian_rated')) return;
+  // Delay 4 seconds so they can read the analysis first
+  setTimeout(() => showRatingPrompt(), 4000);
+}
+
 function checkPaywall() {
   if (!currentFirm) return false;
   if (isCivilian()) return false; // civilians hit teaser wall, not this paywall
@@ -2984,6 +3033,19 @@ async function init() {
     }
   } catch(e) {
     console.error('Session restore failed:', e);
+  }
+
+  // Check for payment success return
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('payment') === 'success') {
+    const plan = urlParams.get('plan');
+    if (plan === 'single_case') {
+      // Civilian just paid - show rating after they see their analysis
+      window._justPaid = true;
+      localStorage.setItem('km_just_paid_case', urlParams.get('case') || '');
+    }
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
   }
 
   sb.auth.onAuthStateChange(async (event, session) => {
