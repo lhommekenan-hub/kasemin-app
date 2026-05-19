@@ -2308,22 +2308,6 @@ function renderSettings(container) {
         </button>
       </div>
     </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">🎁 ${lang==='fr'?'Parrainer un confrère':'Refer a colleague'}</div></div>
-      <div class="card-body">
-        <div style="background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.03));border:1px solid rgba(201,168,76,.15);border-radius:10px;padding:16px;margin-bottom:16px">
-          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">Offrez 1 mois gratuit. Recevez 1 mois gratuit.</div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.7">Recommandez KaseMind à un confrère. Quand il s'abonne, vous recevez tous les deux 1 mois offert automatiquement.</div>
-        </div>
-        <div style="background:var(--bg);border:1.5px solid var(--border2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-size:13px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond',serif;letter-spacing:2px" id="referralCode">KM-REF-${(currentUser?.id||'USER').substring(0,6).toUpperCase()}</div>
-          <button onclick="copyReferral()" style="padding:5px 14px;background:var(--navy);border:none;border-radius:6px;color:white;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer" id="copyRefBtn">Copier</button>
-        </div>
-        <button onclick="shareReferral()" style="width:100%;padding:10px;background:rgba(37,211,102,.1);border:1.5px solid rgba(37,211,102,.25);border-radius:8px;color:#25d366;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-          💬 Envoyer via WhatsApp
-        </button>
-      </div>
-    </div>
   </div>`;
 }
 
@@ -2970,27 +2954,6 @@ function toast(msg, type='i') {
 }
 
 // ===== INIT — Check Supabase Session =====
-function copyReferral() {
-  const code = document.getElementById('referralCode')?.textContent;
-  if (!code) return;
-  navigator.clipboard.writeText(code).then(() => {
-    const btn = document.getElementById('copyRefBtn');
-    if (btn) { btn.textContent = '✓ Copié'; btn.style.background = 'var(--success)'; setTimeout(() => { btn.textContent = 'Copier'; btn.style.background = 'var(--navy)'; }, 2000); }
-  });
-}
-
-function shareReferral() {
-  const code = document.getElementById('referralCode')?.textContent || '';
-  const name = currentUser?.last || '';
-  const msg = encodeURIComponent(`Bonjour Maître,
-
-Je vous recommande KaseMind — l'outil IA pour avocats pénalistes aux Antilles. Il analyse vos dossiers en 60 secondes avec Légifrance + Judilibre.
-
-Utilisez mon code ${code} pour bénéficier d'1 mois gratuit supplémentaire : https://kasemind.fr
-
-Cordialement, Me ${name}`);
-  window.open('https://wa.me/?text=' + msg, '_blank');
-}
 
 function toggleMobileDrawer() {
   document.getElementById('mobileDrawer').classList.toggle('open');
