@@ -498,6 +498,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ===== STATE =====
 let lang = 'fr';
 let currentUser = null;
+let currentFirm = null;
 let currentSession = null;
 let cases = [];
 let result = null;
@@ -719,7 +720,12 @@ async function loadUserProfile(user) {
         plan: data.firm?.plan || 'trial',
         trialDays: 14,
         userType: data.user?.user_type || data.firm?.user_type || 'lawyer',
-        barNumber: data.user?.bar_number || data.firm?.bar_number || ''  
+        barNumber: data.user?.bar_number || data.firm?.bar_number || ''
+      };
+      currentFirm = data.firm || {
+        plan: data.firm?.plan || 'trial',
+        trial_ends_at: data.firm?.trial_ends_at || null,
+        user_type: data.user?.user_type || 'lawyer'
       };
     }
   } catch(e) { /* use metadata */ }
