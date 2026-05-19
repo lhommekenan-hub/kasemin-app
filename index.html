@@ -6,6 +6,7 @@
 <title>KaseMind — Application</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -255,11 +256,50 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
   .two-col{grid-template-columns:1fr}
   .page-content{padding:16px}
 }
+/* Mobile nav */
+.mobile-nav-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.08);padding:12px 16px;align-items:center;justify-content:space-between}
+.mobile-nav-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:white}
+.mobile-nav-logo span{color:var(--gold)}
+.mobile-hamburger{width:36px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;border:none;background:rgba(255,255,255,.06);border-radius:8px}
+.mobile-hamburger span{display:block;width:18px;height:2px;background:rgba(255,255,255,.7);border-radius:2px;transition:all .2s}
+.mobile-drawer{display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,.5)}
+.mobile-drawer-inner{position:absolute;top:0;left:0;width:260px;height:100%;background:var(--navy);padding:70px 12px 24px;overflow-y:auto;box-shadow:4px 0 20px rgba(0,0,0,.4)}
+.mobile-drawer.open{display:block}
+@media(max-width:768px){
+  .mobile-nav-bar{display:flex}
+  #screen-app.active{padding-top:56px}
+}
 </style>
 </head>
 <body>
 
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav-bar" id="mobileNavBar">
+  <div class="mobile-nav-logo"><span>Kase</span>Mind</div>
+  <div class="mobile-hamburger" onclick="toggleMobileDrawer()">
+    <span></span><span></span><span></span>
+  </div>
+</div>
+<div class="mobile-drawer" id="mobileDrawer" onclick="closeMobileDrawer(event)">
+  <div class="mobile-drawer-inner" id="mobileDrawerInner">
+    <div style="padding:0 4px 20px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:white" id="mobileUserName">Me —</div>
+      <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-top:2px" id="mobileUserPlan">Trial</div>
+    </div>
+    <button class="nav-item" style="width:100%" onclick="mobileNav('dashboard')"><span class="nav-icon">🏠</span>Tableau de bord</button>
+    <button class="nav-item" style="width:100%" onclick="mobileNav('analyze')"><span class="nav-icon">🔍</span>Analyser un dossier</button>
+    <button class="nav-item" style="width:100%" onclick="mobileNav('cases')"><span class="nav-icon">📁</span>Mes dossiers</button>
+    <button class="nav-item" style="width:100%" onclick="mobileNav('timeline')"><span class="nav-icon">📅</span>Audiences & délais</button>
+    <div style="height:1px;background:rgba(255,255,255,.06);margin:12px 0"></div>
+    <button class="nav-item" style="width:100%" onclick="mobileNav('rgpd')"><span class="nav-icon">🔒</span>RGPD</button>
+    <button class="nav-item" style="width:100%" onclick="mobileNav('legal')"><span class="nav-icon">📜</span>Mentions légales</button>
+    <button class="nav-item" style="width:100%" onclick="mobileNav('settings')"><span class="nav-icon">⚙️</span>Paramètres</button>
+    <div style="height:1px;background:rgba(255,255,255,.06);margin:12px 0"></div>
+    <button class="btn-logout" style="width:100%" onclick="doLogout()">🚪 Déconnexion</button>
+  </div>
+</div>
 
 <!-- AUTH SCREEN -->
 <div id="screen-auth" class="active">
@@ -336,8 +376,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
       <div class="form-group" id="barFieldWrap">
         <label class="form-label">Numéro de Barreau</label>
-        <input class="form-input" id="regBar" placeholder="Ex: 75B1234 — Barreau de Paris">
-        <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:4px">Requis pour l'accès essai gratuit 14 jours</div>
+        <input class="form-input" id="regBar" placeholder="Ex: 75B1234 — Barreau de Paris" oninput="validateBarNumber(this.value)">
+        <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:4px" id="barHint">Requis pour l'accès essai gratuit 14 jours</div>
       </div>
       <div class="form-group" id="civilianInfoWrap" style="display:none">
         <div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:12px 14px">
@@ -368,6 +408,31 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
       <button class="btn-auth" id="regBtn" onclick="doRegister()">Créer mon compte gratuit</button>
       <a href="https://kasemind.fr" class="auth-back">← Retour à kasemind.fr</a>
+    </div>
+
+    <!-- EMAIL CONFIRMATION CARD -->
+    <div id="authConfirm" class="auth-card" style="display:none">
+      <div style="text-align:center;padding:8px 0 16px">
+        <div style="font-size:48px;margin-bottom:12px">📧</div>
+        <div class="auth-title">Vérifiez votre email</div>
+        <div class="auth-sub" style="margin-top:8px;font-size:14px;color:rgba(255,255,255,.5);line-height:1.7">
+          Un email de confirmation a été envoyé à<br>
+          <strong id="confirmEmailDisplay" style="color:var(--gold)">votre adresse</strong>
+        </div>
+      </div>
+      <div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);border-radius:10px;padding:14px 16px;margin-bottom:20px">
+        <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.8">
+          ✉️ Ouvrez l'email et cliquez sur le lien de confirmation<br>
+          🔄 Revenez ensuite sur cette page pour vous connecter<br>
+          📁 Vérifiez vos spams si vous ne voyez pas l'email
+        </div>
+      </div>
+      <div class="auth-error" id="resendError"></div>
+      <div class="auth-success" id="resendSuccess"></div>
+      <button class="btn-auth" id="resendBtn" onclick="doResendConfirmation()" style="background:transparent;border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7)">
+        Renvoyer l'email de confirmation
+      </button>
+      <a class="auth-back" onclick="switchAuthTab('login')" style="cursor:pointer;margin-top:12px;display:block;text-align:center">← Retour à la connexion</a>
     </div>
 
     <!-- CLIENT ACCESS CARD -->
@@ -442,6 +507,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       </button>
       <button class="nav-item" id="nav-legal" onclick="setPage('legal')" style="font-size:11px">
         <span class="nav-icon">📜</span>Mentions légales
+      </button>
+      <button class="nav-item" id="nav-changelog" onclick="setPage('changelog')" style="font-size:11px;position:relative">
+        <span class="nav-icon">✨</span>Nouveautés
+        <span id="changelogBadge" style="margin-left:auto;background:var(--danger);color:white;border-radius:999px;font-size:8px;font-weight:800;padding:2px 6px">NEW</span>
       </button>
       <button class="nav-item" id="nav-settings" onclick="setPage('settings')">
         <span class="nav-icon">⚙️</span>Paramètres
@@ -548,6 +617,7 @@ function switchAuthTab(tab) {
   document.getElementById('authClient').style.display = tab==='client' ? 'block' : 'none';
   document.getElementById('authClientView').style.display = tab==='clientview' ? 'block' : 'none';
   document.getElementById('authForgot').style.display = tab==='forgot' ? 'block' : 'none';
+  document.getElementById('authConfirm').style.display = tab==='confirm' ? 'block' : 'none';
   const linkEl = document.getElementById('clientAccessLink');
   if (linkEl) linkEl.style.display = (tab==='login'||tab==='register') ? 'block' : 'none';
 }
@@ -616,6 +686,13 @@ async function doRegister() {
     errEl.style.display = 'block';
     return;
   }
+  // Soft bar number validation for lawyers
+  const userType = document.getElementById('regUserType')?.value || 'lawyer';
+  if (userType === 'lawyer' && bar && bar.trim().length < 3) {
+    errEl.textContent = 'Numéro de barreau invalide. Format attendu: ex. 75B1234 ou BT123.';
+    errEl.style.display = 'block';
+    return;
+  }
 
   const pwConfirm = document.getElementById('regPwConfirm').value;
   if (pw !== pwConfirm) {
@@ -636,6 +713,8 @@ async function doRegister() {
         email, password: pw,
         firstName: first, lastName: last,
         barAssociation: bar,
+        barNumber: bar,
+        userType: document.getElementById('regUserType')?.value || 'lawyer',
         firmName: bar || `Cabinet de Me L'homme`
       })
     });
@@ -688,12 +767,36 @@ async function doRegister() {
       return;
     }
 
-    succEl.textContent = '✅ Compte créé ! Connectez-vous maintenant.';
-    succEl.style.display = 'block';
+    // Show confirmation screen
+    const emailEl = document.getElementById('confirmEmailDisplay');
+    if (emailEl) emailEl.textContent = email;
+    switchAuthTab('confirm');
+    return;
   }
 
   btn.disabled = false;
   btn.textContent = 'Créer mon compte gratuit';
+}
+
+async function doResendConfirmation() {
+  const emailEl = document.getElementById('confirmEmailDisplay');
+  const email = emailEl?.textContent;
+  const btn = document.getElementById('resendBtn');
+  const errEl = document.getElementById('resendError');
+  const succEl = document.getElementById('resendSuccess');
+  errEl.style.display = 'none'; succEl.style.display = 'none';
+  if (!email || email === 'votre adresse') { errEl.textContent = 'Email introuvable.'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Envoi...';
+  try {
+    const resp = await fetch(`${API}/api/auth/resend-confirmation`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await resp.json();
+    if (resp.ok) { succEl.textContent = '✅ Email renvoyé ! Vérifiez votre boîte mail.'; succEl.style.display = 'block'; }
+    else { errEl.textContent = data.error || 'Erreur lors du renvoi.'; errEl.style.display = 'block'; }
+  } catch(e) { errEl.textContent = 'Erreur de connexion.'; errEl.style.display = 'block'; }
+  btn.disabled = false; btn.textContent = "Renvoyer l'email de confirmation";
 }
 
 
@@ -784,15 +887,13 @@ async function doClientAccess() {
       <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);margin-bottom:4px">${c.client_name||'Votre dossier'}</div>
       <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:20px">${c.charge||''} ${c.court?'· '+c.court:''} ${c.hearing_date?'· Audience: '+new Date(c.hearing_date).toLocaleDateString('fr-FR'):''}</div>
 
-      ${c.risk_level?`<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;margin-bottom:20px;${c.risk_level==='high'?'background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)':c.risk_level==='medium'?'background:rgba(217,119,6,.15);color:#fcd34d;border:1px solid rgba(217,119,6,.3)':'background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)'}">
-        ${c.risk_level==='high'?'⚠️ Situation sérieuse':c.risk_level==='medium'?'⚡ Situation modérée':'✓ Situation favorable'}
-      </div>`:''}
+      ${c.risk_level ? '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;margin-bottom:20px;' + (c.risk_level==='high'?'background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)':c.risk_level==='medium'?'background:rgba(217,119,6,.15);color:#fcd34d;border:1px solid rgba(217,119,6,.3)':'background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)') + '">' + (c.risk_level==='high'?'⚠️ Situation sérieuse':c.risk_level==='medium'?'⚡ Situation modérée':'✓ Situation favorable') + '</div>' : ''}
 
-      ${ex.what_happened?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">📋 Ce qui se passe</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.what_happened}</div>`:''}
-      ${ex.what_it_means?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">⚖️ Ce que cela signifie</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.what_it_means}</div>`:''}
-      ${ex.what_lawyer_does?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">🛡️ Ce que fait votre avocat</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.what_lawyer_does}</div>`:''}
-      ${ex.what_to_expect?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">🔮 À quoi s'attendre</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.what_to_expect}</div>`:''}
-      ${ex.advice?`<div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">💡 Conseils</div><div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px">${ex.advice}</div>`:''}
+      ${ex.what_happened?"<div style=\"font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px\">📋 Ce qui se passe</div><div style=\"font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px\">${ex.what_happened}</div>":''}
+      ${ex.what_it_means?"<div style=\"font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px\">⚖️ Ce que cela signifie</div><div style=\"font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px\">${ex.what_it_means}</div>":''}
+      ${ex.what_lawyer_does?"<div style=\"font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px\">🛡️ Ce que fait votre avocat</div><div style=\"font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px\">${ex.what_lawyer_does}</div>":''}
+      ${ex.what_to_expect?"<div style=\"font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px\">🔮 À quoi s'attendre</div><div style=\"font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px\">${ex.what_to_expect}</div>":''}
+      ${ex.advice?"<div style=\"font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px\">💡 Conseils</div><div style=\"font-size:13px;color:rgba(255,255,255,.8);line-height:1.8;background:rgba(255,255,255,.04);border-radius:8px;padding:12px 14px;margin-bottom:14px\">${ex.advice}</div>":''}
 
       <div style="font-size:10px;color:rgba(255,255,255,.2);text-align:center;margin-top:8px">Accès valable jusqu'au ${exp} · KaseMind</div>
     </div>`;
@@ -866,6 +967,10 @@ function showApp() {
 
   const name = `Me ${currentUser?.last || ''}`;
   document.getElementById('sidebarName').textContent = name;
+  const mobileNameEl = document.getElementById('mobileUserName');
+  const mobilePlanEl = document.getElementById('mobileUserPlan');
+  if (mobileNameEl) mobileNameEl.textContent = name;
+  if (mobilePlanEl) mobilePlanEl.textContent = currentUser?.plan === 'solo' ? 'Solo · Actif' : currentUser?.plan === 'firm' ? 'Cabinet · Actif' : 'Trial · 14 jours';
   document.getElementById('sidebarPlan').textContent =
     currentUser?.plan === 'solo' ? 'Solo · Actif' :
     currentUser?.plan === 'firm' ? 'Cabinet · Actif' :
@@ -874,6 +979,15 @@ function showApp() {
   checkLFStatus();
   loadCases();
   setPage('dashboard');
+  // Show changelog badge if user hasn't seen latest version
+  const lastSeen = localStorage.getItem('km_changelog_seen');
+  if (lastSeen !== '2') {
+    const badge = document.getElementById('changelogBadge');
+    if (badge) badge.style.display = 'inline-block';
+  } else {
+    const badge = document.getElementById('changelogBadge');
+    if (badge) badge.style.display = 'none';
+  }
 }
 
 // ===== LEGIFRANCE STATUS =====
@@ -946,6 +1060,7 @@ function setPage(page) {
   else if (page === 'cgu') renderCGU(content);
   else if (page === 'cgv') renderCGV(content);
   else if (page === 'privacy') renderPrivacy(content);
+  else if (page === 'changelog') { localStorage.setItem('km_changelog_seen','2'); const badge = document.getElementById('changelogBadge'); if(badge) badge.style.display='none'; renderChangelog(content); }
 }
 
 // ===== DASHBOARD =====
@@ -971,6 +1086,9 @@ async function startCheckout(plan) {
   }
 }
 function renderDashboard(container) {
+  const hasSeenWelcome = localStorage.getItem('km_welcomed');
+  const isNewUser = !hasSeenWelcome && cases.length === 0;
+
   container.innerHTML = `
   <div class="page-header">
     <div>
@@ -979,6 +1097,7 @@ function renderDashboard(container) {
     </div>
     <button class="btn btn-gold" onclick="setPage('analyze')">+ ${lang==='fr'?'Nouveau dossier':'New case'}</button>
   </div>
+  ${isNewUser ? renderWelcomeBanner() : ''}
   <div class="page-content">
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-icon">📁</div><div class="stat-value">${cases.length}</div><div class="stat-label">${lang==='fr'?'Dossiers analysés':'Cases analyzed'}</div></div>
@@ -1727,6 +1846,12 @@ ${lfCtx}${judCtx}${documentContext}`;
   clearInterval(stTimer);
   result = aiResult;
   toast(t('toastComplete'), 's');
+  // Show rating prompt after 3rd analysis
+  const analysisCount = parseInt(localStorage.getItem('km_analysis_count') || '0') + 1;
+  localStorage.setItem('km_analysis_count', analysisCount);
+  if (analysisCount === 3 || analysisCount === 10 || analysisCount === 25) {
+    setTimeout(() => showRatingPrompt(), 3000);
+  }
 
   // AI disclaimer always shown
   const disclaimer = '<div style="background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:rgba(255,255,255,.45);line-height:1.6;display:flex;gap:10px;align-items:flex-start"><span style=\"flex-shrink:0\">⚠️</span><span>Cette analyse est générée par intelligence artificielle à titre informatif uniquement. Elle <strong style=\"color:rgba(255,255,255,.6)\">ne constitue pas un conseil juridique</strong>. Consultez un avocat qualifié avant toute décision. KaseMind décline toute responsabilité quant aux décisions prises sur la base de cette analyse.</span></div>';
@@ -2174,7 +2299,7 @@ function renderSettings(container) {
         </div>
       </div>
     </div>
-    <div class="card">
+    <div class="card" style="margin-bottom:16px">
       <div class="card-header"><div class="card-title">💳 ${lang==='fr'?'Abonnement':'Subscription'}</div></div>
       <div class="card-body">
         <p style="font-size:13px;color:var(--muted);margin-bottom:16px">${lang==='fr'?`Vous êtes sur le plan <strong>${currentUser?.plan||'trial'}</strong>.`:`You are on the <strong>${currentUser?.plan||'trial'}</strong> plan.`}</p>
@@ -2183,7 +2308,23 @@ function renderSettings(container) {
         </button>
       </div>
     </div>
-  </div>`;
+    <div class="card">
+      <div class="card-header"><div class="card-title">🎁 ${lang==='fr'?'Parrainer un confrère':'Refer a colleague'}</div></div>
+      <div class="card-body">
+        <div style="background:linear-gradient(135deg,rgba(201,168,76,.08),rgba(201,168,76,.03));border:1px solid rgba(201,168,76,.15);border-radius:10px;padding:16px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">Offrez 1 mois gratuit. Recevez 1 mois gratuit.</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7">Recommandez KaseMind à un confrère. Quand il s'abonne, vous recevez tous les deux 1 mois offert automatiquement.</div>
+        </div>
+        <div style="background:var(--bg);border:1.5px solid var(--border2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond',serif;letter-spacing:2px" id="referralCode">KM-REF-${(currentUser?.id||'USER').substring(0,6).toUpperCase()}</div>
+          <button onclick="copyReferral()" style="padding:5px 14px;background:var(--navy);border:none;border-radius:6px;color:white;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer" id="copyRefBtn">Copier</button>
+        </div>
+        <button onclick="shareReferral()" style="width:100%;padding:10px;background:rgba(37,211,102,.1);border:1.5px solid rgba(37,211,102,.25);border-radius:8px;color:#25d366;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          💬 Envoyer via WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>\`;
 }
 
 // ===== TIMELINE PAGE =====
@@ -2829,6 +2970,46 @@ function toast(msg, type='i') {
 }
 
 // ===== INIT — Check Supabase Session =====
+function copyReferral() {
+  const code = document.getElementById('referralCode')?.textContent;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyRefBtn');
+    if (btn) { btn.textContent = '✓ Copié'; btn.style.background = 'var(--success)'; setTimeout(() => { btn.textContent = 'Copier'; btn.style.background = 'var(--navy)'; }, 2000); }
+  });
+}
+
+function shareReferral() {
+  const code = document.getElementById('referralCode')?.textContent || '';
+  const name = currentUser?.last || '';
+  const msg = encodeURIComponent(`Bonjour Maître,
+
+Je vous recommande KaseMind — l'outil IA pour avocats pénalistes aux Antilles. Il analyse vos dossiers en 60 secondes avec Légifrance + Judilibre.
+
+Utilisez mon code ${code} pour bénéficier d'1 mois gratuit supplémentaire : https://kasemind.fr
+
+Cordialement, Me ${name}`);
+  window.open('https://wa.me/?text=' + msg, '_blank');
+}
+
+function toggleMobileDrawer() {
+  document.getElementById('mobileDrawer').classList.toggle('open');
+}
+function closeMobileDrawer(e) {
+  if (e.target === document.getElementById('mobileDrawer')) {
+    document.getElementById('mobileDrawer').classList.remove('open');
+  }
+}
+function mobileNav(page) {
+  document.getElementById('mobileDrawer').classList.remove('open');
+  if (page === 'analyze') {
+    result=null;files=[];
+    cf={name:'',charge:'',court:'',date:'',context:'',profile:{casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''},charges:[]};
+    window._currentCaseId=null;
+  }
+  setPage(page);
+}
+
 async function init() {
   try {
     const { data: { session } } = await sb.auth.getSession();
@@ -2858,6 +3039,167 @@ async function init() {
 }
 
 // ===== REGISTRATION TOGGLE =====
+function showRatingPrompt() {
+  if (localStorage.getItem('km_rated')) return;
+  if (document.getElementById('ratingModal')) return;
+  const modal = document.createElement('div');
+  modal.id = 'ratingModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:flex-end;justify-content:center;padding:20px;animation:fadeIn .3s ease';
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px 16px 16px 16px;padding:24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:slideUp .3s ease">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:28px;margin-bottom:8px">⭐</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#0a1628">KaseMind vous est utile ?</div>
+        <div style="font-size:13px;color:#64748b;margin-top:4px">Votre avis aide d'autres avocats à découvrir l'outil</div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:8px;margin-bottom:20px" id="starRow">
+        ${[1,2,3,4,5].map(n => `<span onclick="rateApp(${n})" style="font-size:32px;cursor:pointer;transition:transform .15s;filter:grayscale(1)" onmouseover="hoverStar(${n})" onmouseout="unhoverStar()" id="star${n}">⭐</span>`).join('')}
+      </div>
+      <div id="ratingFeedback" style="display:none;margin-bottom:16px">
+        <textarea id="ratingComment" placeholder="Optionnel — partagez votre expérience..." style="width:100%;border:1.5px solid #e2e8f4;border-radius:8px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13px;resize:none;min-height:70px;outline:none;box-sizing:border-box;color:#0a1628"></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="submitRating()" id="submitRatingBtn" style="flex:1;padding:11px;background:#c9a84c;border:none;border-radius:8px;color:#0a1628;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Envoyer</button>
+        <button onclick="dismissRating()" style="padding:11px 16px;background:transparent;border:1px solid #e2e8f4;border-radius:8px;color:#94a3b8;font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer">Plus tard</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  window._currentRating = 0;
+}
+
+function hoverStar(n) {
+  for (let i = 1; i <= 5; i++) {
+    const s = document.getElementById('star' + i);
+    if (s) s.style.filter = i <= n ? 'grayscale(0)' : 'grayscale(1)';
+  }
+}
+function unhoverStar() {
+  for (let i = 1; i <= 5; i++) {
+    const s = document.getElementById('star' + i);
+    if (s) s.style.filter = i <= (window._currentRating || 0) ? 'grayscale(0)' : 'grayscale(1)';
+  }
+}
+function rateApp(n) {
+  window._currentRating = n;
+  hoverStar(n);
+  document.getElementById('ratingFeedback').style.display = 'block';
+  const btn = document.getElementById('submitRatingBtn');
+  if (btn) btn.textContent = n >= 4 ? 'Envoyer ⭐' : 'Envoyer';
+}
+function dismissRating() {
+  const modal = document.getElementById('ratingModal');
+  if (modal) modal.remove();
+}
+async function submitRating() {
+  const score = window._currentRating || 0;
+  if (!score) { toast('Sélectionnez une note', 'e'); return; }
+  const comment = document.getElementById('ratingComment')?.value || '';
+  const token = currentSession?.access_token || localStorage.getItem('km_token');
+  localStorage.setItem('km_rated', '1');
+  try {
+    await fetch(`${API}/api/ratings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ score, comment, caseId: window._currentCaseId || null, userPlan: currentUser?.plan || 'trial' })
+    });
+  } catch(e) {}
+  dismissRating();
+  if (score >= 4) {
+    toast('Merci pour votre avis ! 🌟', 's');
+    setTimeout(() => {
+      if (confirm('Souhaitez-vous laisser un témoignage sur notre site ? Cela aide d'autres avocats à nous trouver.')) {
+        window.open('mailto:hello@kasemind.fr?subject=Témoignage KaseMind&body=Bonjour Kenan,%0D%0A%0D%0AJe suis ' + (currentUser?.first||'') + ' ' + (currentUser?.last||'') + ', avocat. Voici mon témoignage sur KaseMind :%0D%0A%0D%0A[Votre témoignage ici]%0D%0A%0D%0ACordialement', '_blank');
+      }
+    }, 500);
+  } else {
+    toast('Merci pour votre retour — nous allons améliorer cela.', 'i');
+    setTimeout(() => {
+      window.open('mailto:hello@kasemind.fr?subject=Retour KaseMind&body=Bonjour Kenan,%0D%0A%0D%0AVoici mon retour sur KaseMind :%0D%0A%0D%0A' + encodeURIComponent(comment || '[Votre retour]'), '_blank');
+    }, 500);
+  }
+}
+
+function renderChangelog(container) {
+  const changes = [
+    { version: 'v5.1', date: 'Mai 2026', tag: 'Nouveau', color: '#16a34a', items: [
+      'Analyser une CRPC — verdict ACCEPTER / NÉGOCIER / REFUSER avec score sur 100',
+      'Profil pénal du client — casier, sursis, antécédents modifient toute la stratégie',
+      'Chefs de prévention multiples — analyse du cumul de peines',
+      'Upload direct de document CRPC (PDF, Word, TXT)',
+      'Paywall intelligent — avocats €99/mois, particuliers €49/dossier',
+      'Pages légales complètes — CGU, CGV, Mentions légales, RGPD',
+      'Navigation mobile avec menu hamburger',
+    ]},
+    { version: 'v5.0', date: 'Avril 2026', tag: 'Majeur', color: 'var(--gold)', items: [
+      'Lancement officiel KaseMind',
+      'Analyse complète en 7 sections avec Légifrance + Judilibre',
+      'Contre-interrogatoire mot pour mot',
+      'Plaidoirie rédigée prête à prononcer',
+      'Détection de contradictions automatique',
+      'Timeline procédurale',
+      'Export PDF professionnel',
+      'Portail client KM-XXXX',
+      'Re-analyse avec nouvelles preuves',
+    ]},
+  ];
+
+  container.innerHTML = `
+  <div class="page-header">
+    <div><div class="page-title">✨ Nouveautés</div><div class="page-sub">Historique des mises à jour KaseMind</div></div>
+  </div>
+  <div class="page-content">
+    ${changes.map(v => `
+      <div style="margin-bottom:28px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--navy)">${v.version}</div>
+          <div style="padding:3px 10px;background:${v.color};border-radius:999px;font-size:10px;font-weight:800;color:${v.color === 'var(--gold)' ? 'var(--navy)' : 'white'};text-transform:uppercase;letter-spacing:1px">${v.tag}</div>
+          <div style="font-size:12px;color:var(--muted)">${v.date}</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px">
+          ${v.items.map(item => `<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text)"><span style="color:var(--gold);font-weight:700;flex-shrink:0;margin-top:1px">✓</span>${item}</div>`).join('')}
+        </div>
+      </div>
+    `).join('')}
+    <div style="text-align:center;padding:20px;font-size:12px;color:var(--muted)">
+      Vous avez une suggestion ? <a href="mailto:hello@kasemind.fr" style="color:var(--gold)">hello@kasemind.fr</a>
+    </div>
+  </div>`;
+}
+
+function renderWelcomeBanner() {
+  const name = currentUser?.last || '';
+  return '<div id="welcomeBanner" style="margin:0;background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.04));border-bottom:1px solid rgba(201,168,76,.2);padding:20px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">' +
+    '<div style="font-size:32px">👋</div>' +
+    '<div style="flex:1;min-width:200px">' +
+      '<div style="font-size:15px;font-weight:700;color:white;margin-bottom:4px">Bienvenue sur KaseMind, Me ' + name + ' !</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.6">Commencez par analyser votre premier dossier — KaseMind génère l'analyse complète en 60 secondes.</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+      '<button onclick="localStorage.setItem('km_welcomed','1');setPage('analyze')" style="padding:10px 22px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🔍 Analyser mon premier dossier</button>' +
+      '<button onclick="localStorage.setItem('km_welcomed','1');document.getElementById('welcomeBanner').style.display='none'" style="padding:10px 16px;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.4);font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer">Ignorer</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function validateBarNumber(val) {
+  const hint = document.getElementById('barHint');
+  if (!hint) return;
+  if (!val || val.length < 2) {
+    hint.textContent = "Requis pour l'accès essai gratuit 14 jours";
+    hint.style.color = 'rgba(255,255,255,.3)';
+    return;
+  }
+  // Valid formats: 75B1234, BT123, 971B456, etc.
+  const valid = /^[0-9A-Z]{2,12}$/i.test(val.trim());
+  if (valid) {
+    hint.textContent = '✓ Format valide';
+    hint.style.color = '#4ade80';
+  } else {
+    hint.textContent = 'Format attendu: 75B1234 ou BT0123';
+    hint.style.color = '#fbbf24';
+  }
+}
+
 function toggleBarField() {
   const type = document.getElementById('regUserType')?.value;
   const barWrap = document.getElementById('barFieldWrap');
@@ -2876,21 +3218,22 @@ function toggleBarField() {
 
 // ===== LEGAL PAGES =====
 function legalPage(title, sections) {
-  return `
-  <div style="max-width:720px;margin:0 auto;padding:24px">
-    <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:white;margin-bottom:4px">${title}</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:28px">KaseMind — kasemind.fr — Dernière mise à jour: mai 2026</div>
-    ${sections.map(([h, body]) => `
-      <div style="margin-bottom:24px">
-        <div style="font-size:13px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07)">${h}</div>
-        <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.9">${body}</div>
-      </div>
-    `).join('')}
-    <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);text-align:center">
-      KaseMind · hello@kasemind.fr · kasemind.fr · Hébergement: Cloudflare Pages + Railway (EU) + Supabase Frankfurt
-    </div>
-  </div>`;
+  const sectionsHTML = sections.map(function(item) {
+    const h = item[0]; const body = item[1];
+    return '<div style="margin-bottom:24px">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07)">' + h + '</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.9">' + body + '</div>' +
+    '</div>';
+  }).join('');
+  return '<div style="max-width:720px;margin:0 auto;padding:24px">' +
+    '<div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:white;margin-bottom:4px">' + title + '</div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:28px">KaseMind — kasemind.fr — Dernière mise à jour: mai 2026</div>' +
+    sectionsHTML +
+    '<div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);text-align:center">' +
+      'KaseMind · hello@kasemind.fr · kasemind.fr · Hébergement: Cloudflare Pages + Railway (EU) + Supabase Frankfurt' +
+    '</div></div>';
 }
+
 
 function renderLegal(container) {
   container.innerHTML = legalPage("📜 Mentions Légales", [
