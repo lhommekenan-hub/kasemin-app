@@ -1272,6 +1272,48 @@ function renderChargesList() {
 // ===== CRPC PLEA BARGAIN =====
 let crpcCharges = [];
 
+async function handleCRPCFile(file) {
+  if (!file) return;
+  const token = currentSession?.access_token || localStorage.getItem('km_token');
+  
+  const zone = document.getElementById('crpcUploadZone');
+  const info = document.getElementById('crpcFileInfo');
+  if (zone) zone.innerHTML = '<div style="font-size:13px;color:var(--muted)">⏳ Extraction du texte en cours...</div>';
+
+  try {
+    const formData = new FormData();
+    formData.append('files', file);
+
+    const resp = await fetch(`${API}/api/documents/extract`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+
+    if (resp.ok) {
+      const data = await resp.json();
+      const extracted = data.combinedText || '';
+      if (extracted.trim().length > 10) {
+        // Put extracted text into the textarea
+        const textarea = document.getElementById('crpcText');
+        if (textarea) {
+          textarea.value = extracted.trim();
+          cf.crpcExtracted = true;
+        }
+        if (zone) zone.innerHTML = `<div style="font-size:12px;color:var(--success)">✅ ${file.name} — texte extrait (${Math.round(extracted.length/100)/10}k caractères)</div>`;
+        toast('Document CRPC chargé avec succès', 's');
+      } else {
+        throw new Error('Texte non extrait');
+      }
+    } else {
+      throw new Error('Extraction échouée');
+    }
+  } catch(e) {
+    if (zone) zone.innerHTML = `<div onclick="document.getElementById('crpcFileInput').click()" style="border:2px dashed var(--border2);border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:var(--bg)"><div style="font-size:20px;margin-bottom:6px">📄</div><div style="font-size:13px;font-weight:600;color:var(--navy)">Charger le document CRPC</div><div style="font-size:11px;color:var(--muted);margin-top:3px">PDF · Word · TXT</div></div>`;
+    toast('Erreur lors de la lecture du fichier — collez le texte manuellement', 'e');
+  }
+}
+
 function openCRPC() {
   if (!result) { toast("Analysez un dossier d'abord", 'e'); return; }
   const panel = document.getElementById('crpcPanel');
@@ -1816,13 +1858,24 @@ function renderResultHTML(r) {
           <button onclick="document.getElementById('crpcPanel').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px">✕</button>
         </div>
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Coller ou saisir les termes de la proposition CRPC</div>
-        <textarea id="crpcText" placeholder="Collez ici le texte de la proposition CRPC — peines proposées, chefs couverts, obligations, délai de réponse..." style="width:100%;min-height:140px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;color:white;font-family:Outfit,sans-serif;font-size:13px;resize:vertical;outline:none;box-sizing:border-box"></textarea>
+        <textarea id="crpcText" placeholder="Collez ici le texte de la proposition CRPC — peines proposées, chefs couverts, obligations, délai de réponse..." style="width:100%;min-height:140px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:Outfit,sans-serif;font-size:13px;resize:vertical;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        
+        <div style="margin:10px 0 6px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">— ou —</div>
+          <div id="crpcUploadZone" onclick="document.getElementById('crpcFileInput').click()" style="border:2px dashed var(--border2);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)" onmouseover="this.style.borderColor='var(--gold)';this.style.background='var(--gold-light)'" onmouseout="this.style.borderColor='var(--border2)';this.style.background='var(--bg)'">
+            <input type="file" id="crpcFileInput" accept=".pdf,.doc,.docx,.txt" style="display:none" onchange="handleCRPCFile(this.files[0])">
+            <div style="font-size:20px;margin-bottom:6px">📄</div>
+            <div style="font-size:13px;font-weight:600;color:var(--navy)">Charger le document CRPC</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">PDF · Word · TXT — le texte sera extrait automatiquement</div>
+          </div>
+          <div id="crpcFileInfo" style="display:none;margin-top:8px;background:var(--success-light);border:1px solid rgba(22,163,74,.2);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--success);display:flex;align-items:center;gap:8px"></div>
+        </div>
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px">Chefs couverts par cette CRPC (facultatif)</div>
         <div id="crpcChargesList" style="margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:14px;align-items:end">
-          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Chef d'infraction</label><input id="crpcChargeLabel" placeholder="Ex: Vol aggravé Art. 311-4 CP" style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:white;font-family:Outfit,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
-          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Peine proposée</label><input id="crpcChargePenalty" placeholder="Ex: 8 mois sursis" style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:white;font-family:Outfit,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
-          <button onclick="addCRPCCharge()" style="padding:10px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:white;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;cursor:pointer;height:42px">+ Chef</button>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Chef d'infraction</label><input id="crpcChargeLabel" placeholder="Ex: Vol aggravé Art. 311-4 CP" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:Outfit,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Peine proposée</label><input id="crpcChargePenalty" placeholder="Ex: 8 mois sursis" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:Outfit,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
+          <button onclick="addCRPCCharge()" style="padding:10px 14px;background:var(--navy);border:1px solid var(--navy);border-radius:8px;color:white;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;cursor:pointer;height:42px">+ Chef</button>
         </div>
         <button onclick="runCRPC()" style="width:100%;padding:13px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:Outfit,sans-serif;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.5px">⚖️ Analyser cette CRPC</button>
         <div id="crpcResult" style="margin-top:16px"></div>
