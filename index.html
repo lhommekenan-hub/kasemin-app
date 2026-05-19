@@ -310,7 +310,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
     <!-- REGISTER -->
     <div id="authRegister" class="auth-card" style="display:none">
       <div class="auth-title">Créer votre compte</div>
-      <div class="auth-sub">14 jours d'essai gratuit — sans carte bancaire</div>
+      <div class="auth-sub" id="regSubtitle">14 jours d'essai gratuit pour les avocats — sans CB</div>
       <div class="auth-tabs">
         <button class="auth-tab" onclick="switchAuthTab('login')">Se connecter</button>
         <button class="auth-tab active" onclick="switchAuthTab('register')">Créer un compte</button>
@@ -328,8 +328,22 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Barreau / Cabinet</label>
-        <input class="form-input" id="regBar" placeholder="Barreau de Paris">
+        <label class="form-label">Vous êtes</label>
+        <select class="form-input" id="regUserType" onchange="toggleBarField()" style="background:rgba(255,255,255,.07);color:white;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13px;outline:none;width:100%">
+          <option value="lawyer" style="background:#1a1a2e">⚖️ Avocat / Juriste</option>
+          <option value="civilian" style="background:#1a1a2e">👤 Particulier / Justiciable</option>
+        </select>
+      </div>
+      <div class="form-group" id="barFieldWrap">
+        <label class="form-label">Numéro de Barreau</label>
+        <input class="form-input" id="regBar" placeholder="Ex: 75B1234 — Barreau de Paris">
+        <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:4px">Requis pour l'accès essai gratuit 14 jours</div>
+      </div>
+      <div class="form-group" id="civilianInfoWrap" style="display:none">
+        <div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:4px">📋 Accès par dossier — €49</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6">Analysez votre dossier complet en quelques minutes. Paiement unique, accès permanent à votre analyse.</div>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Email</label>
@@ -343,8 +357,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
         <label class="form-label">Confirmer le mot de passe</label>
         <input class="form-input" type="password" id="regPwConfirm" placeholder="••••••••">
       </div>
-      <div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:14px;line-height:1.6">
-        En créant un compte vous acceptez nos <u style="cursor:pointer">CGU</u> et notre <u style="cursor:pointer">Politique RGPD</u>.
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px">
+        <input type="checkbox" id="regCGU" style="margin-top:2px;flex-shrink:0;accent-color:var(--gold);width:14px;height:14px;cursor:pointer">
+        <label for="regCGU" style="font-size:11px;color:rgba(255,255,255,.4);line-height:1.7;cursor:pointer">
+          J'ai lu et j'accepte les <span onclick="event.preventDefault();setPage('cgu')" style="color:var(--gold);text-decoration:underline;cursor:pointer">CGU</span>,
+          les <span onclick="event.preventDefault();setPage('cgv')" style="color:var(--gold);text-decoration:underline;cursor:pointer">CGV</span> et la
+          <span onclick="event.preventDefault();setPage('privacy')" style="color:var(--gold);text-decoration:underline;cursor:pointer">Politique de confidentialité</span>.
+          <br>KaseMind est un outil d'aide à la décision — pas un conseil juridique.
+        </label>
       </div>
       <button class="btn-auth" id="regBtn" onclick="doRegister()">Créer mon compte gratuit</button>
       <a href="https://kasemind.fr" class="auth-back">← Retour à kasemind.fr</a>
@@ -419,6 +439,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       <div class="nav-section">Compte</div>
       <button class="nav-item" id="nav-rgpd" onclick="setPage('rgpd')">
         <span class="nav-icon">🔒</span>RGPD & Conformité
+      </button>
+      <button class="nav-item" id="nav-legal" onclick="setPage('legal')" style="font-size:11px">
+        <span class="nav-icon">📜</span>Mentions légales
       </button>
       <button class="nav-item" id="nav-settings" onclick="setPage('settings')">
         <span class="nav-icon">⚙️</span>Paramètres
@@ -586,6 +609,12 @@ async function doRegister() {
     errEl.style.display = 'block';
     return;
   }
+  const cguChecked = document.getElementById('regCGU')?.checked;
+  if (!cguChecked) {
+    errEl.textContent = 'Veuillez accepter les CGU, CGV et la Politique de confidentialité.';
+    errEl.style.display = 'block';
+    return;
+  }
 
   const pwConfirm = document.getElementById('regPwConfirm').value;
   if (pw !== pwConfirm) {
@@ -606,7 +635,7 @@ async function doRegister() {
         email, password: pw,
         firstName: first, lastName: last,
         barAssociation: bar,
-        firmName: bar || `Cabinet de Me ${last}`
+        firmName: bar || `Cabinet de Me L'homme`
       })
     });
 
@@ -688,7 +717,9 @@ async function loadUserProfile(user) {
         first: data.user?.first_name || currentUser.first,
         last: data.user?.last_name || currentUser.last,
         plan: data.firm?.plan || 'trial',
-        trialDays: 14
+        trialDays: 14,
+        userType: data.user?.user_type || data.firm?.user_type || 'lawyer',
+        barNumber: data.user?.bar_number || data.firm?.bar_number || ''  
       };
     }
   } catch(e) { /* use metadata */ }
@@ -905,6 +936,10 @@ function setPage(page) {
   else if (page === 'settings') renderSettings(content);
   else if (page === 'timeline') renderTimeline(content);
   else if (page === 'rgpd') renderRGPD(content);
+  else if (page === 'legal') renderLegal(content);
+  else if (page === 'cgu') renderCGU(content);
+  else if (page === 'cgv') renderCGV(content);
+  else if (page === 'privacy') renderPrivacy(content);
 }
 
 // ===== DASHBOARD =====
@@ -917,7 +952,7 @@ async function startCheckout(plan) {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + token
       },
-      body: JSON.stringify({ plan })
+      body: JSON.stringify({ plan, caseId: window._currentCaseId || null })
     });
     const data = await res.json();
     if (data.checkout_url) {
@@ -1645,12 +1680,23 @@ ${lfCtx}${judCtx}${documentContext}`;
   clearInterval(stTimer);
   result = aiResult;
   toast(t('toastComplete'), 's');
-  document.getElementById('resultActions').style.display = 'flex';
-  content.innerHTML = '<div style="padding:24px">' + renderResultHTML(result) + '</div>';
-  setTimeout(() => {
-    const fill = document.getElementById('riskFill');
-    if (fill) fill.style.width = (result.risk_score || 45) + '%';
-  }, 100);
+
+  // AI disclaimer always shown
+  const disclaimer = '<div style="background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:rgba(255,255,255,.45);line-height:1.6;display:flex;gap:10px;align-items:flex-start"><span style=\"flex-shrink:0\">⚠️</span><span>Cette analyse est générée par intelligence artificielle à titre informatif uniquement. Elle <strong style=\"color:rgba(255,255,255,.6)\">ne constitue pas un conseil juridique</strong>. Consultez un avocat qualifié avant toute décision. KaseMind décline toute responsabilité quant aux décisions prises sur la base de cette analyse.</span></div>';
+
+  if (isCivilian()) {
+    // Civilian: show teaser + paywall, hide action buttons
+    document.getElementById('resultActions').style.display = 'none';
+    content.innerHTML = '<div style="padding:24px">' + disclaimer + '</div>';
+    showCivilianPaywall(content, window._currentCaseId);
+  } else {
+    document.getElementById('resultActions').style.display = 'flex';
+    content.innerHTML = '<div style="padding:24px">' + disclaimer + renderResultHTML(result) + '</div>';
+    setTimeout(() => {
+      const fill = document.getElementById('riskFill');
+      if (fill) fill.style.width = (result.risk_score || 45) + '%';
+    }, 100);
+  }
 }
 
 function buildFallback() {
@@ -2517,8 +2563,13 @@ function updateTrialBanner() {
 }
 
 // ===== PAYWALL (trial expired) =====
+function isCivilian() {
+  return (currentUser?.userType === 'civilian') || (currentFirm?.user_type === 'civilian');
+}
+
 function checkPaywall() {
   if (!currentFirm) return false;
+  if (isCivilian()) return false; // civilians hit teaser wall, not this paywall
   const plan = currentFirm.plan || 'trial';
   const trialEnds = currentFirm.trial_ends_at;
   if (plan === 'trial' && trialEnds) {
@@ -2529,28 +2580,70 @@ function checkPaywall() {
 }
 
 function showPaywall(container) {
+  // Lawyer paywall — Solo only. No €49, no €299 pitch.
   container.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;min-height:60vh">
-      <div style="text-align:center;max-width:480px;padding:40px">
+      <div style="text-align:center;max-width:420px;padding:40px">
         <div style="font-size:48px;margin-bottom:16px">⏰</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;margin-bottom:12px">Votre essai gratuit est terminé</div>
-        <div style="font-size:15px;color:var(--muted);margin-bottom:32px;line-height:1.7">Vos dossiers sont conservés. Choisissez un plan pour continuer à utiliser KaseMind.</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center">
-            <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Solo</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600">€99<span style="font-size:14px;color:var(--muted)">/mois</span></div>
-            <div style="font-size:12px;color:var(--muted);margin:8px 0">1 avocat · Analyses illimitées</div>
-            <a href="https://buy.stripe.com/YOUR_SOLO_LINK" target="_blank" style="display:block;padding:10px;background:var(--gold);border-radius:8px;color:var(--navy);font-weight:700;font-size:13px;text-decoration:none;margin-top:12px">S'abonner</a>
-          </div>
-          <div style="background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.03));border:1px solid rgba(201,168,76,.3);border-radius:12px;padding:20px;text-align:center;position:relative">
-            <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--navy);font-size:9px;font-weight:800;padding:3px 12px;border-radius:999px;text-transform:uppercase;letter-spacing:1px;white-space:nowrap">Bientôt</div>
-            <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cabinet</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600">€299<span style="font-size:14px;color:var(--muted)">/mois</span></div>
-            <div style="font-size:12px;color:var(--muted);margin:8px 0">5 avocats · Tout inclus</div>
-            <div style="padding:10px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:8px;color:var(--gold);font-size:12px;margin-top:12px">Disponible prochainement</div>
-          </div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.7">Vos dossiers sont conservés. Continuez avec le plan Solo pour un accès illimité.</div>
+        <div style="background:var(--card);border:1.5px solid rgba(201,168,76,.4);border-radius:14px;padding:28px;text-align:center;margin-bottom:20px">
+          <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">Plan Solo Avocat</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:700;color:white">€99<span style="font-size:16px;color:var(--muted);font-weight:400">/mois</span></div>
+          <div style="font-size:12px;color:var(--muted);margin:10px 0 20px">Analyses illimitées · Tous les outils · Annulable à tout moment</div>
+          <button onclick="startCheckout('solo')" style="width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;cursor:pointer">
+            S'abonner maintenant
+          </button>
         </div>
         <div style="font-size:12px;color:var(--muted)">Questions ? <a href="mailto:support@kasemind.fr" style="color:var(--gold)">support@kasemind.fr</a></div>
+      </div>
+    </div>`;
+}
+
+function showCivilianPaywall(container, caseId) {
+  // Civilian paywall — €49 per case only. No monthly subscription shown.
+  container.innerHTML = `
+    <div style="margin:24px 0">
+      <div style="background:rgba(0,0,0,.3);border:1.5px solid rgba(201,168,76,.35);border-radius:14px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.03));padding:24px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
+          <div style="font-size:13px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Aperçu de votre analyse</div>
+          <div style="font-size:28px;font-weight:600;font-family:'Cormorant Garamond',serif;color:white;margin-bottom:4px">Votre dossier a été analysé</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.5)">Débloquez le rapport complet pour accéder à tous les résultats</div>
+        </div>
+        <div style="padding:20px">
+          <div style="margin-bottom:16px">
+            ${[
+              ['⚖️ Niveau de risque','Niveau évalué — ' + (result?.risk_level === 'high' ? '🔴 Élevé' : result?.risk_level === 'medium' ? '🟡 Moyen' : '🟢 Faible'),'visible'],
+              ['📋 Résumé du dossier', result?.summary ? result.summary.substring(0,120)+'...' : 'Résumé généré', 'visible'],
+              ['🔒 Stratégies de défense complètes','3 stratégies personnalisées identifiées','locked'],
+              ['🔒 Contre-interrogatoire','Questions mot à mot pour chaque témoin','locked'],
+              ['🔒 Plaidoirie rédigée','Discours complet prêt à prononcer','locked'],
+              ['🔒 Contradictions détectées','Failles exploitables dans le dossier','locked'],
+              ['🔒 Timeline procédurale','Calendrier complet jusqu\'au jugement','locked'],
+            ].map(([icon, text, state]) => `
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+                <div style="font-size:13px;${state==='locked'?'filter:blur(0px)':''}">${icon}</div>
+                <div style="flex:1;font-size:13px;color:${state==='locked'?'rgba(255,255,255,.25)':'rgba(255,255,255,.8)'}">
+                  ${state==='locked' ? '<span style="filter:blur(4px);user-select:none">' + text + '</span>' : text}
+                </div>
+                ${state==='locked'?'<div style="font-size:10px;color:rgba(255,255,255,.25);font-weight:700">🔒</div>':'<div style="font-size:10px;color:var(--success);font-weight:700">✓</div>'}
+              </div>
+            `).join('')}
+          </div>
+          <div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Accès complet — 1 dossier</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:700;color:white;margin-bottom:4px">€49</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:16px">Paiement unique · Accès permanent à ce dossier</div>
+            <button onclick="startCheckout('single_case')" style="width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:8px">
+              Débloquer mon analyse — €49
+            </button>
+            <div style="font-size:11px;color:rgba(255,255,255,.3)">Paiement sécurisé par Stripe · Sans abonnement</div>
+          </div>
+          <div style="font-size:11px;color:rgba(255,255,255,.25);text-align:center;line-height:1.6">
+            🔒 Vos documents sont chiffrés et hébergés en Europe (Frankfurt).<br>
+            KaseMind est un outil d'aide à la décision — pas un conseil juridique.
+          </div>
+        </div>
       </div>
     </div>`;
 }
@@ -2699,6 +2792,100 @@ async function init() {
       localStorage.removeItem('km_token');
     }
   });
+}
+
+// ===== REGISTRATION TOGGLE =====
+function toggleBarField() {
+  const type = document.getElementById('regUserType')?.value;
+  const barWrap = document.getElementById('barFieldWrap');
+  const civWrap = document.getElementById('civilianInfoWrap');
+  const sub = document.getElementById('regSubtitle');
+  if (type === 'civilian') {
+    if (barWrap) barWrap.style.display = 'none';
+    if (civWrap) civWrap.style.display = 'block';
+    if (sub) sub.textContent = 'Analysez votre dossier — Accès complet €49';
+  } else {
+    if (barWrap) barWrap.style.display = 'block';
+    if (civWrap) civWrap.style.display = 'none';
+    if (sub) sub.textContent = '14 jours d\'essai gratuit pour les avocats — sans CB';
+  }
+}
+
+// ===== LEGAL PAGES =====
+function legalPage(title, sections) {
+  return `
+  <div style="max-width:720px;margin:0 auto;padding:24px">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:white;margin-bottom:4px">${title}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:28px">KaseMind — kasemind.fr — Dernière mise à jour: mai 2026</div>
+    ${sections.map(([h, body]) => `
+      <div style="margin-bottom:24px">
+        <div style="font-size:13px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.07)">${h}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.65);line-height:1.9">${body}</div>
+      </div>
+    `).join('')}
+    <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);text-align:center">
+      KaseMind · hello@kasemind.fr · kasemind.fr · Hébergement: Cloudflare Pages + Railway (EU) + Supabase Frankfurt
+    </div>
+  </div>`;
+}
+
+function renderLegal(container) {
+  container.innerHTML = legalPage("📜 Mentions Légales", [
+    ["Éditeur du site", "Le site <strong>kasemind.fr</strong> et l'application <strong>app.kasemind.fr</strong> sont édités par :<br><br>Kenan L'homme — Fondateur & Développeur<br>Saint-Martin (97150), Collectivité de Saint-Martin<br>Email : hello@kasemind.fr<br>Statut : Entrepreneur individuel / En cours d'immatriculation"],
+    ["Hébergement", "L'application est hébergée par :<br><br>• <strong>Cloudflare Pages</strong> — Cloudflare, Inc. 101 Townsend St, San Francisco, CA 94107, USA (CDN uniquement)<br>• <strong>Railway</strong> — Railway Corp., San Francisco, USA (serveur backend)<br>• <strong>Supabase</strong> — Supabase Inc., base de données hébergée à Francfort, Allemagne (région EU)<br><br>Les données personnelles sont exclusivement stockées sur les serveurs européens (Frankfurt, DE)."],
+    ["Directeur de la publication", "Kenan L'homme — hello@kasemind.fr"],
+    ["Propriété intellectuelle", "L'ensemble du contenu de KaseMind (textes, logos, interface, code, analyses générées) est protégé par le droit de la propriété intellectuelle. Toute reproduction, représentation ou diffusion sans autorisation écrite préalable est interdite.<br><br>Les marques, logos et noms commerciaux KaseMind sont la propriété exclusive de leur auteur."],
+    ["Limitation de responsabilité", "KaseMind est un <strong>outil d'aide à la décision basé sur l'intelligence artificielle</strong>. Les analyses produites ne constituent en aucun cas un conseil juridique au sens de la loi du 31 décembre 1971. L'éditeur ne saurait être tenu responsable des décisions prises sur la base des analyses générées. L'utilisateur demeure seul responsable de l'usage qu'il fait de l'application."],
+    ["Médiation et litiges", "En cas de litige, l'utilisateur peut recourir à une médiation de la consommation. Contact préalable obligatoire : hello@kasemind.fr. Délai de réponse : 15 jours ouvrés."],
+    ["Droit applicable", "Les présentes mentions légales sont soumises au droit français. En cas de litige, les tribunaux compétents sont ceux du ressort du domicile du défendeur."]
+  ]);
+}
+
+function renderCGU(container) {
+  container.innerHTML = legalPage("⚖️ Conditions Générales d'Utilisation (CGU)", [
+    ["1. Objet et acceptation", "Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme KaseMind (kasemind.fr / app.kasemind.fr), outil d'assistance juridique par intelligence artificielle destiné aux professionnels du droit et aux particuliers.<br><br>L'accès à KaseMind implique l'acceptation pleine et entière des présentes CGU. Si vous n'acceptez pas ces conditions, vous ne devez pas utiliser le service."],
+    ["2. Description du service", "KaseMind est une plateforme SaaS qui analyse des documents juridiques pénaux (procès-verbaux, actes de procédure, expertises, etc.) à l'aide de modèles d'intelligence artificielle (Claude, Anthropic) et de sources juridiques officielles (Judilibre, Légifrance).<br><br>Le service produit des analyses, stratégies de défense, contre-interrogatoires, plaidoiries et timelines procédurales à titre <strong>informatif et d'aide à la décision uniquement</strong>."],
+    ["3. Absence de conseil juridique — IMPORTANT", "<strong>KaseMind n'est pas un cabinet d'avocats. KaseMind n'est pas un service de consultation juridique. Les analyses générées ne constituent PAS un conseil juridique au sens de la loi du 31 décembre 1971 portant réforme de certaines professions judiciaires et juridiques.</strong><br><br>Les résultats produits par KaseMind :<br>• Sont générés automatiquement par intelligence artificielle<br>• Peuvent contenir des erreurs, inexactitudes ou omissions<br>• Doivent être vérifiés par un avocat qualifié avant tout usage en justice<br>• Ne remplacent en aucun cas la consultation d'un professionnel du droit<br><br>L'utilisateur reconnaît avoir été informé de ces limitations et utilise KaseMind sous sa seule responsabilité."],
+    ["4. Conditions d'accès et comptes utilisateurs", "L'accès au service nécessite la création d'un compte. L'utilisateur s'engage à fournir des informations exactes lors de l'inscription. Les professionnels du droit (avocats) bénéficient d'un essai gratuit de 14 jours sur présentation de leur numéro de barreau. Les particuliers accèdent au service via un paiement unique par dossier.<br><br>L'utilisateur est responsable de la confidentialité de ses identifiants. Tout accès frauduleux est sous la responsabilité de l'utilisateur."],
+    ["5. Obligations de l'utilisateur", "L'utilisateur s'engage à :<br>• Utiliser KaseMind conformément à la loi et aux présentes CGU<br>• Ne pas tenter de contourner les mesures de sécurité<br>• Ne pas uploader de documents contenant des données sensibles non nécessaires à l'analyse<br>• Ne pas utiliser KaseMind à des fins illicites ou frauduleuses<br>• Respecter les droits des tiers (confidentialité, vie privée)<br>• Vérifier l'exactitude des analyses avant tout usage professionnel"],
+    ["6. Propriété des données et confidentialité", "Les documents uploadés par l'utilisateur restent sa propriété. KaseMind ne revendique aucun droit sur le contenu des dossiers.<br><br>Les documents sont transmis à l'API Claude (Anthropic) pour traitement. Anthropic est soumis à sa propre politique de confidentialité. KaseMind ne vend pas les données utilisateurs à des tiers."],
+    ["7. Disponibilité et maintenance", "KaseMind s'efforce d'assurer une disponibilité maximale du service mais ne garantit pas une disponibilité ininterrompue. Des maintenances peuvent entraîner des interruptions temporaires."],
+    ["8. Modification des CGU", "KaseMind se réserve le droit de modifier les présentes CGU à tout moment. Les modifications entrent en vigueur dès leur publication. L'utilisation continue du service après modification vaut acceptation des nouvelles CGU."],
+    ["9. Résiliation", "L'utilisateur peut résilier son compte à tout moment. KaseMind peut suspendre ou résilier un compte en cas de violation des CGU."],
+    ["10. Droit applicable et juridiction", "Les présentes CGU sont régies par le droit français. Tout litige sera soumis aux tribunaux compétents après tentative de résolution amiable."],
+    ["Contact", "Pour toute question : hello@kasemind.fr"]
+  ]);
+}
+
+function renderCGV(container) {
+  container.innerHTML = legalPage("💳 Conditions Générales de Vente (CGV)", [
+    ["1. Objet", "Les présentes Conditions Générales de Vente (CGV) régissent les transactions commerciales effectuées sur la plateforme KaseMind entre l'éditeur et les utilisateurs souhaitant accéder aux fonctionnalités payantes du service."],
+    ["2. Offres et tarifs", "<strong>Plan Solo Avocat — €99 TTC/mois</strong><br>Accès illimité à toutes les fonctionnalités pour 1 avocat. Abonnement mensuel sans engagement. Résiliation possible à tout moment avant le prochain renouvellement.<br><br><strong>Accès Dossier Unique — €49 TTC</strong><br>Accès complet et permanent à l'analyse complète d'un seul dossier. Paiement unique, non récurrent. Aucun abonnement créé.<br><br><strong>Plan Cabinet — €299 TTC/mois</strong><br>Multi-utilisateurs (jusqu'à 5 avocats). Disponible prochainement.<br><br>Tous les prix sont indiqués TTC. TVA applicable selon la réglementation en vigueur."],
+    ["3. Processus de commande et paiement", "Les paiements sont traités par <strong>Stripe</strong> (Stripe, Inc.), plateforme de paiement sécurisée certifiée PCI DSS. KaseMind ne stocke à aucun moment les informations de carte bancaire.<br><br>Moyens de paiement acceptés : carte bancaire Visa, Mastercard, American Express. Le paiement est dû immédiatement lors de la commande."],
+    ["4. Droit de rétractation", "Conformément à l'article L.221-28 du Code de la consommation, le droit de rétractation ne s'applique pas aux contenus numériques dont l'exécution a commencé avec l'accord préalable du consommateur.<br><br>En accédant à l'analyse de votre dossier, vous acceptez expressément que le service commence immédiatement et renoncez à votre droit de rétractation.<br><br>Cependant, en cas de problème technique empêchant l'accès au service commandé, KaseMind s'engage à proposer un remboursement ou un avoir dans un délai de 7 jours."],
+    ["5. Abonnements — résiliation", "Les abonnements mensuels sont résiliables à tout moment depuis les paramètres du compte ou par email à hello@kasemind.fr. La résiliation prend effet à la fin de la période mensuelle en cours. Aucun remboursement partiel n'est effectué pour la période déjà facturée."],
+    ["6. Accès dossier unique — conditions", "L'accès dossier unique (€49) donne un accès permanent et illimité dans le temps à l'analyse complète du dossier concerné. Cet accès est nominatif et non transférable. Il ne crée aucun abonnement."],
+    ["7. Facturation", "Une facture est émise automatiquement par email après chaque paiement. Pour toute question de facturation : hello@kasemind.fr"],
+    ["8. Responsabilité", "KaseMind ne saurait être tenu responsable de l'usage fait par l'utilisateur des analyses produites. Les analyses constituent une aide à la décision et non un conseil juridique. En cas de défaillance technique empêchant l'accès au service payant, la responsabilité de KaseMind est limitée au montant payé par l'utilisateur."],
+    ["9. Droit applicable", "Les présentes CGV sont soumises au droit français. Tout litige relatif à leur interprétation ou exécution sera soumis aux tribunaux compétents."],
+    ["Contact commercial", "hello@kasemind.fr · kasemind.fr"]
+  ]);
+}
+
+function renderPrivacy(container) {
+  container.innerHTML = legalPage("🔒 Politique de Confidentialité & RGPD", [
+    ["1. Responsable du traitement", "Kenan L'homme — Fondateur KaseMind<br>hello@kasemind.fr / privacy@kasemind.fr<br>Saint-Martin (97150)"],
+    ["2. Données collectées", "<strong>Lors de l'inscription :</strong> nom, prénom, adresse email, numéro de barreau (si avocat), type d'utilisateur.<br><br><strong>Lors de l'utilisation :</strong> contenu des dossiers uploadés (documents juridiques, PV, expertises), analyses générées, métadonnées d'usage (dates, heures, type d'analyse).<br><br><strong>Paiement :</strong> les données de paiement (numéro de carte) sont traitées directement par Stripe. KaseMind ne stocke aucune donnée bancaire.<br><br><strong>Automatiquement :</strong> adresse IP, type de navigateur, données de session (nécessaires au fonctionnement)."],
+    ["3. Finalités et bases légales", "• <strong>Fourniture du service</strong> — base légale : exécution du contrat<br>• <strong>Facturation et gestion des abonnements</strong> — base légale : obligation légale + contrat<br>• <strong>Amélioration du service</strong> — base légale : intérêt légitime<br>• <strong>Conformité RGPD</strong> — base légale : obligation légale"],
+    ["4. Hébergement et transferts de données", "• <strong>Base de données</strong> : Supabase, serveurs Francfort (DE) — Union Européenne ✅<br>• <strong>Backend</strong> : Railway, infrastructure AWS eu-west (Europe) ✅<br>• <strong>Frontend</strong> : Cloudflare Pages — CDN mondial (pas de données personnelles stockées)<br>• <strong>IA</strong> : Claude API (Anthropic, USA) — les documents sont transmis pour traitement uniquement. Anthropic s'est engagé à ne pas utiliser les données API pour l'entraînement de ses modèles.<br><br>Aucune donnée personnelle n'est transférée hors UE sauf pour le traitement IA (Anthropic, couvert par les clauses contractuelles types de la Commission Européenne)."],
+    ["5. Durée de conservation", "• Données de compte : durée de l'abonnement + 3 ans après résiliation<br>• Dossiers et analyses : durée de l'abonnement + 1 an (ou suppression sur demande)<br>• Données de facturation : 10 ans (obligation comptable)<br>• Logs techniques : 90 jours"],
+    ["6. Vos droits RGPD", "Conformément au RGPD (Règlement 2016/679) et à la loi Informatique et Libertés, vous disposez des droits suivants :<br><br>• <strong>Droit d'accès</strong> — obtenir une copie de vos données<br>• <strong>Droit de rectification</strong> — corriger des données inexactes<br>• <strong>Droit à l'effacement</strong> — suppression de votre compte et données<br>• <strong>Droit à la portabilité</strong> — recevoir vos données dans un format structuré<br>• <strong>Droit d'opposition</strong> — vous opposer à certains traitements<br>• <strong>Droit à la limitation</strong> — restreindre le traitement dans certains cas<br><br>Pour exercer vos droits : <strong>privacy@kasemind.fr</strong><br>Délai de réponse : 30 jours maximum (délai légal RGPD)."],
+    ["7. Cookies et traceurs", "KaseMind utilise uniquement des cookies techniques strictement nécessaires au fonctionnement (session d'authentification, préférences de langue). Aucun cookie publicitaire ou de tracking tiers n'est utilisé.<br><br>Ces cookies ne nécessitent pas votre consentement (Art. 82 de la loi Informatique et Libertés)."],
+    ["8. Secret professionnel", "KaseMind respecte le secret professionnel de l'avocat prévu à l'article 66-5 de la loi du 31 décembre 1971. Le contenu des dossiers juridiques uploadés est traité de manière confidentielle et n'est jamais communiqué à des tiers."],
+    ["9. Sécurité", "• Chiffrement des communications : TLS 1.3<br>• Chiffrement des données en base : AES-256 (Supabase)<br>• Authentification : JWT tokens avec expiration<br>• Accès aux données restreint au personnel autorisé<br>• Pas de mot de passe en clair stocké (hashage bcrypt)"],
+    ["10. Réclamation CNIL", "Si vous estimez que vos droits ne sont pas respectés, vous pouvez introduire une réclamation auprès de la CNIL : www.cnil.fr"],
+    ["Contact DPO", "<strong>privacy@kasemind.fr</strong><br>Délai de réponse : 72 heures ouvrées"]
+  ]);
 }
 
 init();
