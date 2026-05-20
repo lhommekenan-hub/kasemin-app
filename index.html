@@ -401,8 +401,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       <div class="form-group">
         <label class="form-label">Vous êtes</label>
         <select class="form-input" id="regUserType" onchange="toggleBarField()" style="background:rgba(255,255,255,.07);color:white;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13px;outline:none;width:100%">
-          <option value="lawyer" style="background:#1a1a2e">⚖️ Avocat / Juriste</option>
-          <option value="civilian" style="background:#1a1a2e">👤 Particulier / Justiciable</option>
+          <option value="lawyer" >⚖️ Avocat / Juriste</option>
+          <option value="civilian" >👤 Particulier / Justiciable</option>
         </select>
       </div>
       <div class="form-group" id="barFieldWrap">
@@ -1241,19 +1241,19 @@ function renderAnalyze(container) {
       </div>
       <div class="fg" style="margin-bottom:16px"><label>${lang==='fr'?'Contexte':'Context'}</label><textarea id="cfCtx" placeholder="${lang==='fr'?'Contexte additionnel...':'Additional context...'}" oninput="cf.context=this.value">${cf.context}</textarea></div>
 
-      <div id="chargesToggle" onclick="toggleCharges()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;cursor:pointer;margin-bottom:12px;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.07)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">
+      <div id="chargesToggle" onclick="toggleCharges()" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg);border:1.5px solid var(--border2);border-radius:10px;cursor:pointer;margin-bottom:12px;transition:all .2s" onmouseover="this.style.background='rgba(10,22,40,.05)'" onmouseout="this.style.background='var(--bg)'">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:16px">⚖️</span>
           <div>
-            <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.85)">${lang==='fr'?'Chefs de prévention multiples':'Multiple charges'}</div>
+            <div style="font-size:13px;font-weight:700;color:var(--navy)">${lang==='fr'?'Chefs de prévention multiples':'Multiple charges'}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:1px">${lang==='fr'?'Ajouter plusieurs infractions au même dossier — analyse cumul de peines':'Add multiple offenses — cumulative sentence analysis'}</div>
           </div>
         </div>
-        <div id="chargesChevron" style="color:rgba(255,255,255,.4);font-size:14px;font-weight:700;transition:transform .25s">▼</div>
+        <div id="chargesChevron" style="color:var(--muted);font-size:14px;font-weight:700;transition:transform .25s">▼</div>
       </div>
 
-      <div id="chargesSection" style="display:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:16px">
-        <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">${lang==='fr'?'Le chef principal ci-dessus est automatiquement inclus':'Main charge above is automatically included'}</div>
+      <div id="chargesSection" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">${lang==='fr'?'Le chef principal ci-dessus est automatiquement inclus':'Main charge above is automatically included'}</div>
         <div id="chargesList" style="margin-bottom:12px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
           <div class="fg" style="margin-bottom:0">
@@ -1264,7 +1264,7 @@ function renderAnalyze(container) {
             <label>${lang==='fr'?'Peine maximale':'Max sentence'}</label>
             <input id="newChargeMax" placeholder="${lang==='fr'?'Ex: 5 ans + 75 000€':'E.g. 5 years + €75,000'}" style="width:100%">
           </div>
-          <button onclick="addCharge()" style="padding:10px 14px;background:rgba(201,168,76,.15);border:1.5px solid rgba(201,168,76,.4);border-radius:8px;color:var(--gold);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;height:42px">+ Ajouter</button>
+          <button onclick="addCharge()" style="padding:10px 14px;background:var(--navy);border:1.5px solid var(--navy);border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;height:42px">+ Ajouter</button>
         </div>
       </div>
 
@@ -1279,30 +1279,30 @@ function renderAnalyze(container) {
         <div id="profileChevron" style="color:var(--gold);font-size:14px;font-weight:700;transition:transform .25s">▼</div>
       </div>
 
-      <div id="profileSection" style="display:none;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:16px">
+      <div id="profileSection" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
         <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px">⚖️ ${lang==='fr'?'Ces informations modifient en profondeur la stratégie de défense':'This information deeply shapes the defense strategy'}</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="fg">
             <label>${lang==='fr'?'Casier judiciaire':'Criminal record'}</label>
-            <select id="cfCasier" oninput="cf.profile.casier=this.value" style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:white;font-family:'Outfit',sans-serif;font-size:13px;outline:none">
-              <option value="" style="background:#1a1a2e">${lang==='fr'?'Sélectionner...':'Select...'}</option>
-              <option value="vierge" style="background:#1a1a2e">${lang==='fr'?'Casier vierge (B1 vide)':'Clean record'}</option>
-              <option value="mention_effacee" style="background:#1a1a2e">${lang==='fr'?'Mentions effacées':'Mentions cleared'}</option>
-              <option value="condamnations_mineure" style="background:#1a1a2e">${lang==='fr'?'Condamnations mineures':'Minor convictions'}</option>
-              <option value="condamnations_grave" style="background:#1a1a2e">${lang==='fr'?'Condamnations graves':'Serious convictions'}</option>
-              <option value="recidive" style="background:#1a1a2e">${lang==='fr'?'En état de récidive légale':'Legal recidivism'}</option>
+            <select id="cfCasier" oninput="cf.profile.casier=this.value" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;outline:none">
+              <option value="">${lang==='fr'?'Sélectionner...':'Select...'}</option>
+              <option value="vierge">${lang==='fr'?'Casier vierge (B1 vide)':'Clean record'}</option>
+              <option value="mention_effacee" >${lang==='fr'?'Mentions effacées':'Mentions cleared'}</option>
+              <option value="condamnations_mineure" >${lang==='fr'?'Condamnations mineures':'Minor convictions'}</option>
+              <option value="condamnations_grave" >${lang==='fr'?'Condamnations graves':'Serious convictions'}</option>
+              <option value="recidive" >${lang==='fr'?'En état de récidive légale':'Legal recidivism'}</option>
             </select>
           </div>
           <div class="fg">
             <label>${lang==='fr'?'Sursis en cours':'Active suspended sentence'}</label>
-            <select id="cfSursis" oninput="cf.profile.sursis=this.value" style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;color:white;font-family:'Outfit',sans-serif;font-size:13px;outline:none">
-              <option value="" style="background:#1a1a2e">${lang==='fr'?'Sélectionner...':'Select...'}</option>
-              <option value="aucun" style="background:#1a1a2e">${lang==='fr'?'Aucun sursis':'No suspended sentence'}</option>
-              <option value="sme" style="background:#1a1a2e">SME ${lang==='fr'?'en cours':'in progress'}</option>
-              <option value="sme_probation" style="background:#1a1a2e">SME + ${lang==='fr'?'probation':'probation'}</option>
-              <option value="sme_risque_revocation" style="background:#1a1a2e">${lang==='fr'?'SME — risque de révocation':'SME — revocation risk'}</option>
-              <option value="sursis_revoque" style="background:#1a1a2e">${lang==='fr'?'Sursis déjà révoqué':'Suspended sentence revoked'}</option>
+            <select id="cfSursis" oninput="cf.profile.sursis=this.value" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;outline:none">
+              <option value="" >${lang==='fr'?'Sélectionner...':'Select...'}</option>
+              <option value="aucun" >${lang==='fr'?'Aucun sursis':'No suspended sentence'}</option>
+              <option value="sme" >SME ${lang==='fr'?'en cours':'in progress'}</option>
+              <option value="sme_probation" >SME + ${lang==='fr'?'probation':'probation'}</option>
+              <option value="sme_risque_revocation" >${lang==='fr'?'SME — risque de révocation':'SME — revocation risk'}</option>
+              <option value="sursis_revoque" >${lang==='fr'?'Sursis déjà révoqué':'Suspended sentence revoked'}</option>
             </select>
           </div>
         </div>
@@ -1890,7 +1890,7 @@ ${lfCtx}${judCtx}${documentContext}`;
   }
 
   // AI disclaimer always shown
-  const disclaimer = '<div style="background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:rgba(255,255,255,.45);line-height:1.6;display:flex;gap:10px;align-items:flex-start"><span style=\"flex-shrink:0\">⚠️</span><span>Cette analyse est générée par intelligence artificielle à titre informatif uniquement. Elle <strong style=\"color:rgba(255,255,255,.6)\">ne constitue pas un conseil juridique</strong>. Consultez un avocat qualifié avant toute décision. KaseMind décline toute responsabilité quant aux décisions prises sur la base de cette analyse.</span></div>';
+  const disclaimer = '<div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--text);line-height:1.6;display:flex;gap:10px;align-items:flex-start"><span style=\"flex-shrink:0\">⚠️</span><span>Cette analyse est générée par intelligence artificielle à titre informatif uniquement. Elle <strong style=\"color:var(--navy);font-weight:700\">ne constitue pas un conseil juridique</strong>. Consultez un avocat qualifié avant toute décision. KaseMind décline toute responsabilité quant aux décisions prises sur la base de cette analyse.</span></div>';
 
   if (isCivilian()) {
     // Civilian: show teaser + paywall, hide action buttons
@@ -2095,6 +2095,16 @@ function switchRT(tab) {
 // ===== SAVE CASE =====
 async function saveCase() {
   if (!result) return;
+  if (window._isSaving) return; // prevent double save
+  window._isSaving = true;
+  const saveBtn = document.querySelector('button[onclick="saveCase()"]');
+  if (saveBtn) { saveBtn.textContent = '💾 Sauvegarde...'; saveBtn.disabled = true; }
+  
+  // Reset after 3 seconds regardless
+  setTimeout(() => {
+    window._isSaving = false;
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = window._currentCaseId ? '💾 Mis à jour' : '💾 Sauvegarder'; }
+  }, 3000);
 
   const caseData = {
     clientName: cf.name,
@@ -2143,6 +2153,8 @@ async function saveCase() {
         window._currentCaseId = data.case?.id;
         updateCasesBadge();
         toast(t('toastSaved'), 's');
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Sauvegardé ✓'; }
+        window._isSaving = false;
         return;
       }
     } catch(e) { /* fallback */ }
@@ -3195,15 +3207,15 @@ function renderWelcomeBanner() {
   const name = currentUser?.last || '';
   const div = document.createElement('div');
   div.id = 'welcomeBanner';
-  div.style.cssText = 'margin:0;background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.04));border-bottom:1px solid rgba(201,168,76,.2);padding:20px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap';
+  div.style.cssText = 'margin:0;background:linear-gradient(135deg,var(--navy),var(--navy2));border-bottom:2px solid rgba(201,168,76,.3);padding:20px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap';
   div.innerHTML = '<div style="font-size:32px">&#128075;</div>' +
     '<div style="flex:1;min-width:200px">' +
       '<div style="font-size:15px;font-weight:700;color:white;margin-bottom:4px">Bienvenue sur KaseMind, Me ' + name + ' !</div>' +
-      '<div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.6">Commencez par analyser votre premier dossier en 60 secondes.</div>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6">Commencez par analyser votre premier dossier en 60 secondes.</div>' +
     '</div>' +
     '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
       '<button id="welcomeStartBtn" style="padding:10px 22px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer">&#128269; Analyser mon premier dossier</button>' +
-      '<button id="welcomeDismissBtn" style="padding:10px 16px;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.4);font-family:Outfit,sans-serif;font-size:12px;cursor:pointer">Ignorer</button>' +
+      '<button id="welcomeDismissBtn" style="padding:10px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:rgba(255,255,255,.7);font-family:Outfit,sans-serif;font-size:12px;cursor:pointer">Ignorer</button>' +
     '</div>';
   setTimeout(function() {
     const startBtn = document.getElementById('welcomeStartBtn');
