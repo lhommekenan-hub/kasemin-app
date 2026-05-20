@@ -2097,65 +2097,72 @@ async function saveCase() {
   if (!result) return;
   if (window._isSaving) return;
   window._isSaving = true;
+  setTimeout(() => { window._isSaving = false; }, 4000);
 
-  const saveBtn = document.querySelector('button[onclick="saveCase()"]');
-  if (saveBtn) { saveBtn.textContent = '💾 Sauvegarde...'; saveBtn.disabled = true; }
-
-  const done = (msg, isUpdate) => {
-    window._isSaving = false;
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = isUpdate ? '💾 Mis à jour ✓' : '💾 Sauvegardé ✓';
-    }
-    toast(msg, 's');
+  const caseData = {
+    clientName: cf.name,
+    clientEmail: '',
+    charge: cf.charge,
+    court: cf.court,
+    hearingDate: cf.date || null,
+    notes: cf.context,
+    riskLevel: result.risk_level,
+    riskScore: result.risk_score,
+    analysisJson: result,
+    clientProfile: cf.profile || null,
+    chargesJson: cf.charges && cf.charges.length > 0 ? cf.charges : null
   };
 
-  const fail = () => {
-    window._isSaving = false;
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Sauvegarder'; }
-  };
+  const _saveTok = currentSession?.access_token || localStorage.getItem('km_token') || '';
+  if (_saveTok) {
+    try {
+      if (window._currentCaseId) {
+        const resp = await fetch(`${API}/api/cases/${window._currentCaseId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_saveTok}` },
+          body: JSON.stringify({ riskLevel: result.risk_level, riskScore: result.risk_score, analysisJson: result, notes: cf.context })
+        });
+        if (resp.ok) {
+          window._isSaving = false;
+          toast(lang==='fr'?'Dossier mis à jour':'Case updated', 's');
+          return;
+        }
+      }
 
-  const tok = currentSession?.access_token || localStorage.getItem('km_token') || '';
-
-  try {
-    // UPDATE if case already exists
-    if (window._currentCaseId && typeof window._currentCaseId === 'string' && window._currentCaseId.length > 10) {
-      const r = await fetch(`${API}/api/cases/${window._currentCaseId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tok}` },
-        body: JSON.stringify({ riskLevel: result.risk_level, riskScore: result.risk_score, analysisJson: result, notes: cf.context })
+      const resp = await fetch(`${API}/api/cases`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${_saveTok}` },
+        body: JSON.stringify(caseData)
       });
-      if (r.ok) { done(lang === 'fr' ? 'Dossier mis à jour' : 'Case updated', true); return; }
-    }
-
-    // CREATE new case
-    const r = await fetch(`${API}/api/cases`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tok}` },
-      body: JSON.stringify({
-        clientName: cf.name, clientEmail: '', charge: cf.charge, court: cf.court,
-        hearingDate: cf.date || null, notes: cf.context,
-        riskLevel: result.risk_level, riskScore: result.risk_score,
-        analysisJson: result,
-        clientProfile: cf.profile || null,
-        chargesJson: cf.charges && cf.charges.length > 0 ? cf.charges : null
-      })
-    });
-
-    if (r.ok) {
-      const data = await r.json();
-      window._currentCaseId = data.case?.id;
-      cases.unshift(data.case);
-      updateCasesBadge();
-      done(t('toastSaved'), false);
-      return;
-    }
-  } catch(e) {
-    console.error('Save error:', e);
+      if (resp.ok) {
+        const data = await resp.json();
+        cases.unshift(data.case);
+        window._currentCaseId = data.case?.id;
+        updateCasesBadge();
+        window._isSaving = false;
+        toast(t('toastSaved'), 's');
+        return;
+      }
+    } catch(e) { console.error('Save error:', e); }
   }
 
-  fail();
-  toast('Erreur de sauvegarde', 'e');
+  // Fallback to localStorage
+  if (!window._currentCaseId) {
+    const entry = {
+      id: Date.now(),
+      name: cf.name, client_name: cf.name,
+      charge: cf.charge, court: cf.court,
+      date: cf.date, hearing_date: cf.date,
+      risk: result.risk_level, risk_level: result.risk_level,
+      result
+    };
+    cases.unshift(entry);
+    window._currentCaseId = entry.id;
+    localStorage.setItem('km_cases', JSON.stringify(cases));
+    updateCasesBadge();
+  }
+  window._isSaving = false;
+  toast(t('toastSaved'), 's');
 }
 
 
