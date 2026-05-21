@@ -61,16 +61,19 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 /* ===== AUTH ===== */
 #screen-auth{
   min-height:100vh;
-  background:var(--navy);
+  background:radial-gradient(ellipse at 70% 10%,#0f2044 0%,#0a1628 50%,#060d1a 100%);
   display:none;
   align-items:center;
   justify-content:center;
   position:relative;
   overflow:hidden;
+  padding:24px 16px;
 }
 #screen-auth.active{display:flex}
-#screen-auth::before{content:'';position:absolute;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(201,168,76,.12) 0%,transparent 70%);pointer-events:none}
-#screen-auth::after{content:'';position:absolute;bottom:-200px;left:-200px;width:500px;height:500px;background:radial-gradient(circle,rgba(22,45,94,.5) 0%,transparent 60%);pointer-events:none}
+#screen-auth::before{content:'';position:absolute;top:-150px;right:-150px;width:500px;height:500px;background:radial-gradient(circle,rgba(201,168,76,.14) 0%,transparent 65%);pointer-events:none}
+#screen-auth::after{content:'';position:absolute;bottom:-150px;left:-150px;width:450px;height:450px;background:radial-gradient(circle,rgba(22,45,94,.6) 0%,transparent 60%);pointer-events:none}
+/* subtle diagonal lines */
+#screen-auth .auth-bg-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(201,168,76,.015) 0,rgba(201,168,76,.015) 1px,transparent 0,transparent 50%);background-size:40px 40px;pointer-events:none}
 
 .auth-box{width:100%;max-width:440px;position:relative;z-index:10;animation:fadeUp .5s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -288,6 +291,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
   .stats-grid{grid-template-columns:1fr 1fr}
   .two-col{grid-template-columns:1fr}
   .page-content{padding:16px}
+  .page-header{padding:12px 16px}
+  .form-grid{grid-template-columns:1fr}
+  .result-header{padding:16px;flex-direction:column;align-items:flex-start}
+  .result-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .rtab{white-space:nowrap;padding:10px 14px}
+  .auth-card{padding:24px 20px}
 }
 /* Mobile nav */
 .mobile-nav-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.08);padding:12px 16px;align-items:center;justify-content:space-between}
@@ -304,23 +313,75 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 }
 
 /* ===== PREMIUM ENHANCEMENTS ===== */
-.stat-card{position:relative;overflow:hidden}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.4)}50%{box-shadow:0 0 0 8px rgba(201,168,76,0)}}
+@keyframes stagger-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Stat cards */
+.stat-card{position:relative;overflow:hidden;animation:stagger-in .4s ease both}
+.stat-card:nth-child(1){animation-delay:.05s}
+.stat-card:nth-child(2){animation-delay:.1s}
+.stat-card:nth-child(3){animation-delay:.15s}
+.stat-card:nth-child(4){animation-delay:.2s}
 .stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .3s}
 .stat-card:hover::after{opacity:.6}
-.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 2px 12px rgba(201,168,76,.2);transition:all .2s}
-.btn-gold:hover{background:linear-gradient(135deg,var(--gold2),#f0d87a);box-shadow:0 4px 20px rgba(201,168,76,.35);transform:translateY(-1px)}
-.card{transition:box-shadow .2s}
+
+/* Buttons */
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 2px 12px rgba(201,168,76,.25);transition:all .2s}
+.btn-gold:hover{background:linear-gradient(135deg,#d4b45a,#f0d87a);box-shadow:0 6px 24px rgba(201,168,76,.4);transform:translateY(-1px)}
+.btn-gold:active{transform:translateY(0);box-shadow:0 2px 8px rgba(201,168,76,.2)}
+.btn-navy:hover{background:#162d5e}
+.btn:active{transform:scale(.98)}
+
+/* Cards */
+.card{transition:box-shadow .2s,transform .2s}
 .card:hover{box-shadow:var(--shadow-md)}
-.page-header{background:linear-gradient(to right,white,#fafbfd)}
-.auth-card{box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.strategy-card{box-shadow:0 4px 20px rgba(10,22,40,.3)}
-.strategy-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.4}
-.result-header{background:linear-gradient(135deg,var(--navy),var(--navy2),#1a3a7a);box-shadow:0 4px 20px rgba(10,22,40,.2)}
+.page-header{background:linear-gradient(to right,white,#fafbfd);backdrop-filter:blur(8px)}
+
+/* Auth */
+.auth-card{box-shadow:0 24px 64px rgba(0,0,0,.45)}
+.auth-box{padding:0 16px}
+
+/* Strategy cards */
+.strategy-card{box-shadow:0 4px 24px rgba(10,22,40,.35)}
+.strategy-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.5}
+
+/* Result header */
+.result-header{background:linear-gradient(135deg,var(--navy),#102040,#162d5e);box-shadow:0 4px 24px rgba(10,22,40,.25)}
+
+/* Sections */
 .section-label{font-size:11px}
-.pt{transition:all .15s}
-.pt:hover{border-color:var(--gold);background:var(--gold-light)}
+.pt{transition:all .18s}
+.pt:hover{border-color:rgba(201,168,76,.4);background:var(--gold-light);transform:translateX(2px)}
+.law-card{transition:all .15s}.law-card:hover{border-left-color:var(--gold);box-shadow:var(--shadow)}
+.juris-card{transition:all .15s}.juris-card:hover{box-shadow:var(--shadow)}
+
+/* Cases */
 .case-row:hover{background:var(--bg);border-radius:var(--radius-xs);padding-left:4px}
-.auth-logo-icon{box-shadow:0 6px 24px rgba(201,168,76,.4)}
+
+/* Auth logo */
+.auth-logo-icon{box-shadow:0 8px 28px rgba(201,168,76,.45)}
+
+/* Sidebar nav items */
+.nav-item{transition:all .18s;position:relative}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;background:var(--gold);border-radius:0 2px 2px 0}
+
+/* Input focus ring */
+.fg input:focus,.fg select:focus,.fg textarea:focus{box-shadow:0 0 0 3px rgba(201,168,76,.12)}
+.form-input:focus{box-shadow:0 0 0 3px rgba(201,168,76,.2)}
+
+/* Result tabs */
+.rtab{transition:all .2s;position:relative}
+.rtab:hover{color:var(--navy);background:rgba(201,168,76,.04)}
+
+/* Loading wrap */
+.loading-wrap{background:linear-gradient(135deg,var(--navy),var(--navy2));box-shadow:0 8px 40px rgba(10,22,40,.3)}
+
+/* Sub box */
+.sub-box{background:linear-gradient(135deg,var(--navy),var(--navy2));box-shadow:0 4px 20px rgba(10,22,40,.2)}
+
+/* Card header subtle gradient */
+.card-header{background:linear-gradient(to right,white,#fafbff)}
 
 /* ===== GUIDED TOUR ===== */
 .tour-lens{position:fixed;border:2px solid var(--gold);border-radius:10px;box-shadow:0 0 0 9999px rgba(10,22,40,.78),0 0 0 4px rgba(201,168,76,.15);z-index:10001;pointer-events:none;transition:top .4s cubic-bezier(.4,0,.2,1),left .4s cubic-bezier(.4,0,.2,1),width .4s cubic-bezier(.4,0,.2,1),height .4s cubic-bezier(.4,0,.2,1)}
@@ -365,6 +426,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 
 <!-- AUTH SCREEN -->
 <div id="screen-auth" class="active">
+  <div class="auth-bg-lines"></div>
   <div class="auth-box">
     <div class="auth-logo">
       <div class="auth-logo-icon">K</div>
@@ -431,7 +493,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
       <div class="form-group">
         <label class="form-label">Vous êtes</label>
-        <select class="form-input" id="regUserType" onchange="toggleBarField()" style="background:#0f2044;color:white;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13px;outline:none;width:100%">
+        <select class="form-input" id="regUserType" onchange="toggleBarField()" style="appearance:auto;-webkit-appearance:auto;background:rgba(255,255,255,.07);color:white;border:1.5px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);padding:12px 16px;font-family:'Outfit',sans-serif;font-size:14px;outline:none;width:100%;cursor:pointer">
           <option value="lawyer" style="background:#0f2044;color:white">⚖️ Avocat / Juriste</option>
           <option value="civilian" style="background:#0f2044;color:white">👤 Particulier / Justiciable</option>
         </select>
@@ -706,9 +768,19 @@ async function doLogin() {
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
 
   if (error) {
-    errEl.textContent = error.message === 'Invalid login credentials'
+    const msg = error.message || '';
+    if (msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('email_not_confirmed')) {
+      // Redirect to confirmation screen
+      const emailEl = document.getElementById('confirmEmailDisplay');
+      if (emailEl) emailEl.textContent = email;
+      btn.disabled = false;
+      btn.textContent = 'Se Connecter';
+      switchAuthTab('confirm');
+      return;
+    }
+    errEl.textContent = msg === 'Invalid login credentials'
       ? 'Email ou mot de passe incorrect.'
-      : error.message;
+      : msg;
     errEl.style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'Se Connecter';
@@ -1169,7 +1241,7 @@ function setPage(page) {
 async function startCheckout(plan) {
   try {
     const token = localStorage.getItem('km_token');
-    const res = await fetch('https://kasemind-backend-production.up.railway.app/api/billing/checkout', {
+    const res = await fetch(`${API}/api/billing/checkout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1181,10 +1253,10 @@ async function startCheckout(plan) {
     if (data.checkout_url) {
       window.location.href = data.checkout_url;
     } else {
-      alert('Erreur lors de la création du paiement');
+      toast(data.error || 'Erreur lors de la création du paiement', 'e');
     }
   } catch (err) {
-    alert('Erreur de connexion');
+    toast('Erreur de connexion au service de paiement', 'e');
   }
 }
 function renderDashboard(container) {
@@ -1204,7 +1276,15 @@ function renderDashboard(container) {
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-icon">📁</div><div class="stat-value">${cases.length}</div><div class="stat-label">${lang==='fr'?'Dossiers analysés':'Cases analyzed'}</div></div>
       <div class="stat-card"><div class="stat-icon">📜</div><div class="stat-value">${cases.length * 7}</div><div class="stat-label">${lang==='fr'?'Articles consultés':'Articles consulted'}</div></div>
-      <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value">${currentUser?.trialDays||14}</div><div class="stat-label">${lang==='fr'?'Jours restants':'Trial days left'}</div></div>
+      ${(()=>{
+        const trialEnds = currentFirm?.trial_ends_at;
+        const plan = currentFirm?.plan || 'trial';
+        if ((plan === 'solo' || plan === 'firm') && !isCivilian()) {
+          return `<div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" style="font-size:20px;margin-top:4px">${plan==='firm'?'Cabinet':'Solo'}</div><div class="stat-label">${lang==='fr'?'Plan actif':'Active plan'}</div></div>`;
+        }
+        const daysLeft = trialEnds ? Math.max(0, Math.ceil((new Date(trialEnds) - new Date()) / (1000*60*60*24))) : 14;
+        return `<div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-value" style="color:${daysLeft<=3?'var(--danger)':daysLeft<=7?'var(--warn)':'var(--navy)'}">${daysLeft}</div><div class="stat-label">${lang==='fr'?'Jours restants':'Trial days left'}</div></div>`;
+      })()}
       <div class="stat-card"><div class="stat-icon">🔒</div><div class="stat-value" style="font-size:16px;margin-top:4px">AES-256</div><div class="stat-label">RGPD ${lang==='fr'?'Conforme':'Compliant'}</div></div>
     </div>
     <div class="two-col">
@@ -1402,10 +1482,10 @@ function renderAnalyze(container) {
 
       <button id="analyzeSubmitBtn" class="btn btn-gold" style="width:100%;justify-content:center;padding:14px" onclick="doAnalyze()">${t('analyzeBtn')}</button>
     </div>
-    ${result ? renderResultHTML(result) : ''}
+    ${result && !isCivilian() ? renderResultHTML(result) : ''}
   </div>`;
 
-  if (result) {
+  if (result && !isCivilian()) {
     document.getElementById('resultActions').style.display = 'flex';
     setTimeout(() => {
       const fill = document.getElementById('riskFill');
@@ -1414,6 +1494,17 @@ function renderAnalyze(container) {
         fill.style.width = score + '%';
       }
     }, 100);
+  }
+
+  // Show civilian paywall immediately if result exists but user is a civilian
+  if (result && isCivilian()) {
+    const content = document.getElementById('analyzeContent');
+    if (content) {
+      document.getElementById('resultActions').style.display = 'none';
+      const disclaimer = '<div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--text);line-height:1.6;display:flex;gap:10px;align-items:flex-start"><span style="flex-shrink:0">⚠️</span><span>Cette analyse est générée par intelligence artificielle à titre informatif uniquement. Elle <strong style="color:var(--navy);font-weight:700">ne constitue pas un conseil juridique</strong>. Consultez un avocat qualifié avant toute décision.</span></div>';
+      content.innerHTML = '<div style="padding:24px">' + disclaimer + '</div>';
+      showCivilianPaywall(content, window._currentCaseId);
+    }
   }
 
   document.getElementById('uploadZone').addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); });
@@ -2033,7 +2124,7 @@ function renderResultHTML(r) {
   return `
   <div class="result-header">
     <div>
-      <div class="result-name">${cf.name||lang==='fr'?'Analyse de dossier':'Case analysis'}</div>
+      <div class="result-name">${cf.name||(lang==='fr'?'Analyse de dossier':'Case analysis')}</div>
       <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:3px">${cf.charge||''} ${cf.court?'· '+cf.court:''}</div>
     </div>
     <div class="result-complete">${r.summary ? '✓ Analyse complète' : '✓ Analyse effectuée'}</div>
@@ -2285,6 +2376,20 @@ function renderCases(container) {
         setTimeout(checkCivilianRating, 2000);
       } else {
         window._caseUnlocked = false;
+      }
+      // If backend returned is_locked:true (analysis_json stripped), synthesise teaser from case fields
+      if (cs.is_locked && !result) {
+        result = {
+          risk_level: cs.risk_level || 'medium',
+          risk_score: cs.risk_score || 50,
+          summary: cs.charge ? `Dossier : ${cs.charge}` : '',
+          prosecution_weaknesses: [],
+          defense_strengths: [],
+          applicable_laws: [], jurisprudence: [], strategies: [],
+          what_to_say: '', what_to_do_now: [], investigate_further: [],
+          client_explanation: {},
+          _is_locked: true
+        };
       }
       setPage('analyze');
     };
@@ -2592,9 +2697,9 @@ async function runMotionAction(action, caseId) {
       caseData: {
         client_name: cf.name,
         charge: cf.charge,
+        court: cf.court,
         notes: cf.context || '',
         analysis_json: result,
-        // Pass key elements as notes so contradictions engine can find them
         prosecution_weaknesses_text: (result.prosecution_weaknesses || []).join('\n'),
         context: `Client: ${cf.name}. Charge: ${cf.charge}. Tribunal: ${cf.court}. Contexte: ${cf.context || 'Aucun'}. Failles identifiées: ${(result.prosecution_weaknesses || []).join(' | ')}`
       }
