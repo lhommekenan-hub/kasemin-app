@@ -690,6 +690,8 @@ async function doLogin() {
   const pw = document.getElementById('loginPw').value;
   const errEl = document.getElementById('loginError');
   const btn = document.getElementById('loginBtn');
+  // Defensive reset — ensure button is always clickable at start of each attempt
+  if (btn) { btn.disabled = false; }
   errEl.style.display = 'none';
 
   if (!email || !pw) {
@@ -804,10 +806,11 @@ async function doRegister() {
     showApp();
 
   } catch(e) {
-    // Fallback: direct Supabase signup
+    // Fallback: direct Supabase signup (store user_type in metadata so profile always works)
+    const userTypeVal = document.getElementById('regUserType')?.value || 'lawyer';
     const { data, error } = await sb.auth.signUp({
       email, password: pw,
-      options: { data: { first_name: first, last_name: last, bar_association: bar } }
+      options: { data: { first_name: first, last_name: last, bar_association: bar, user_type: userTypeVal } }
     });
 
     btn.disabled = false;
@@ -863,12 +866,15 @@ async function doResendConfirmation() {
 
 
 async function loadUserProfile(user) {
+  // Seed from Supabase metadata — includes user_type if stored at registration
+  const metaType = user.user_metadata?.user_type || localStorage.getItem('km_user_type') || 'lawyer';
   currentUser = {
     id: user.id,
     email: user.email,
     first: user.user_metadata?.first_name || '',
     last: user.user_metadata?.last_name || '',
-    plan: 'trial'
+    plan: 'trial',
+    userType: metaType   // always set — API call may override but never leaves undefined
   };
 
   // Try to load from backend
@@ -878,26 +884,38 @@ async function loadUserProfile(user) {
     });
     if (resp.ok) {
       const data = await resp.json();
+      const uType = data.user?.user_type || data.firm?.user_type || 'lawyer';
       currentUser = {
         ...currentUser,
         first: data.user?.first_name || currentUser.first,
         last: data.user?.last_name || currentUser.last,
         plan: data.firm?.plan || 'trial',
         trialDays: 14,
-        userType: data.user?.user_type || data.firm?.user_type || 'lawyer',
+        userType: uType,
         barNumber: data.user?.bar_number || data.firm?.bar_number || ''
       };
       currentFirm = data.firm || {
-        plan: data.firm?.plan || 'trial',
-        trial_ends_at: data.firm?.trial_ends_at || null,
-        user_type: data.user?.user_type || 'lawyer'
+        plan: 'trial',
+        trial_ends_at: null,
+        user_type: uType
       };
+      // Cache civilian status so it survives API failures on next load
+      if (uType === 'civilian') {
+        localStorage.setItem('km_user_type', 'civilian');
+      } else {
+        localStorage.removeItem('km_user_type');
+      }
     }
-  } catch(e) { /* use metadata */ }
+  } catch(e) {
+    // API failed — currentUser.userType already seeded from metadata/localStorage above
+    console.warn('[profile] API unavailable, using cached user type:', currentUser.userType);
+  }
 }
 
 async function doLogout() {
-  await sb.auth.signOut();
+  // Use scope:'local' — only clears local session, no server round-trip, won't hang
+  try { await sb.auth.signOut({ scope: 'local' }); } catch(e) { console.warn('signOut error:', e); }
+
   currentUser = null;
   currentFirm = null;
   currentSession = null;
@@ -907,11 +925,13 @@ async function doLogout() {
   window._currentCaseId = null;
   localStorage.removeItem('km_token');
 
-  // Re-enable auth buttons so login works immediately without a page reload
+  // Unconditionally re-enable login form — this MUST run even if signOut threw
   const loginBtn = document.getElementById('loginBtn');
   if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Se Connecter'; }
   const regBtn = document.getElementById('regBtn');
   if (regBtn) { regBtn.disabled = false; regBtn.textContent = 'Créer mon compte gratuit'; }
+  const loginPw = document.getElementById('loginPw');
+  if (loginPw) loginPw.value = '';
   const loginErr = document.getElementById('loginError');
   if (loginErr) { loginErr.style.display = 'none'; loginErr.textContent = ''; }
 
@@ -2963,40 +2983,65 @@ function showOnboardingTour() {
 
 // ===== GUIDED SPOTLIGHT TOUR =====
 function startGuidedTour() {
-  // Ensure we're on the analyze page
   setPage('analyze');
 
   const isCiv = isCivilian();
+  const n = isCiv ? 5 : 6;
 
-  // Define steps: target element ID, title, body text
-  const steps = isCiv ? [
-    { id: 'cfName',          title: 'Votre nom',       text: 'Saisissez votre prénom et nom ici.', num: '1/4' },
-    { id: 'cfCharge',        title: 'Le chef retenu',  text: 'Indiquez l\'infraction reprochée (ex : vol, violence, escroquerie…).', num: '2/4' },
-    { id: 'cfCtx',           title: 'Contexte',        text: 'Décrivez les faits en quelques mots. Plus le contexte est précis, plus l\'analyse sera pertinente.', num: '3/4' },
-    { id: 'analyzeSubmitBtn',title: 'Lancer l\'analyse',text: 'Cliquez ici pour lancer l\'analyse IA. Résultat en ~30 secondes.', num: '4/4' }
-  ] : [
-    { id: 'cfName',          title: 'Nom du client',   text: 'Saisissez le nom de votre client ou de la personne mise en cause.', num: '1/4' },
-    { id: 'cfCharge',        title: 'Chef d\'inculpation', text: 'Indiquez l\'infraction reprochée (ex : vol aggravé Art. 311-4 CP).', num: '2/4' },
-    { id: 'cfCtx',           title: 'Contexte du dossier', text: 'Décrivez les faits et le contexte procédural. Plus vous donnez de détails, plus l\'analyse est précise.', num: '3/4' },
-    { id: 'analyzeSubmitBtn',title: 'Lancer l\'analyse', text: 'Cliquez ici pour lancer l\'analyse complète avec Légifrance + Judilibre + Claude AI.', num: '4/4' }
-  ];
+  const steps = [
+    {
+      id: 'nav-analyze',
+      title: isCiv ? '1. Analyser un dossier' : '1. Nouveau dossier',
+      text: isCiv
+        ? 'Cliquez sur ce bouton pour accéder à l\'analyse de votre dossier pénal.'
+        : 'Ce bouton démarre l\'analyse d\'un nouveau dossier. Cliquez ici à chaque nouveau client.',
+      num: `1/${n}`
+    },
+    {
+      id: 'cfName',
+      title: isCiv ? '2. Votre nom' : '2. Nom du client',
+      text: isCiv ? 'Saisissez votre prénom et votre nom.' : 'Saisissez le nom complet du client ou de la personne mise en cause.',
+      num: `2/${n}`
+    },
+    {
+      id: 'cfCharge',
+      title: '3. Chef d\'inculpation',
+      text: 'Indiquez l\'infraction reprochée (ex : vol aggravé Art. 311-4 CP, violences, escroquerie…).',
+      num: `3/${n}`
+    },
+    {
+      id: 'analyzeSubmitBtn',
+      title: '4. Lancer l\'analyse',
+      text: 'Cliquez ici pour démarrer l\'analyse IA complète avec Légifrance + Judilibre. Durée ~30 secondes.',
+      num: `4/${n}`
+    },
+    {
+      id: 'resultActions',
+      title: '5. Sauvegarder',
+      text: 'Après l\'analyse, ce bouton apparaît pour sauvegarder le dossier dans votre espace. Vous pouvez aussi l\'imprimer.',
+      num: `5/${n}`,
+      forceShow: true   // resultActions is hidden — show it temporarily for the tour
+    },
+    {
+      id: 'analyzeContent',
+      title: isCiv ? '5. Vos résultats' : '6. Résultats de l\'analyse',
+      text: 'Les résultats complets s\'affichent ici : score de risque, stratégies de défense, jurisprudence, plaidoirie, timeline.',
+      num: `${n}/${n}`,
+      skipIfCiv: true   // civilians see paywall instead of results — adjust messaging
+    }
+  ].filter(s => !(s.skipIfCiv && isCiv));   // remove lawyer-only result step for civilians
 
   let tourIdx = 0;
   let lens = null;
   let tooltip = null;
-
-  function getTourEl(id) {
-    return document.getElementById(id);
-  }
+  let restoredIds = [];   // elements we temporarily force-showed
 
   function positionTooltip(rect) {
     const vpW = window.innerWidth;
     const vpH = window.innerHeight;
-    const tW = 300;
-    const tH = 160;
+    const tW = 310;
+    const tH = 170;
     let top, left;
-
-    // Prefer below, fallback above, then right
     if (rect.bottom + tH + 16 < vpH) {
       top = rect.bottom + 12;
       left = Math.max(12, Math.min(rect.left, vpW - tW - 12));
@@ -3005,7 +3050,7 @@ function startGuidedTour() {
       left = Math.max(12, Math.min(rect.left, vpW - tW - 12));
     } else {
       top = Math.max(12, rect.top);
-      left = rect.right + 12 < vpW - tW ? rect.right + 12 : Math.max(12, rect.left - tW - 12);
+      left = rect.right + 16 < vpW - tW ? rect.right + 16 : Math.max(12, rect.left - tW - 16);
     }
     tooltip.style.top = top + 'px';
     tooltip.style.left = left + 'px';
@@ -3013,19 +3058,29 @@ function startGuidedTour() {
 
   function showStep(idx) {
     const s = steps[idx];
-    // Wait briefly for DOM if needed (e.g. page just rendered)
-    const el = getTourEl(s.id);
-    if (!el) {
-      // Element not yet in DOM — wait and retry
-      setTimeout(() => showStep(idx), 200);
-      return;
+    const isLast = idx === steps.length - 1;
+
+    // Force-show hidden elements (e.g. resultActions) for the tour
+    if (s.forceShow) {
+      const fe = document.getElementById(s.id);
+      if (fe && fe.style.display === 'none') {
+        fe.style.display = 'flex';
+        restoredIds.push(s.id);
+      }
     }
 
-    // Scroll element into view
+    const el = document.getElementById(s.id);
+    if (!el) { setTimeout(() => showStep(idx), 250); return; }
+
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     setTimeout(() => {
       const rect = el.getBoundingClientRect();
+      // Guard: if element has no size (still hidden), skip it
+      if (rect.width === 0 && rect.height === 0) {
+        window._tourNext();
+        return;
+      }
       const pad = 8;
 
       if (!lens) {
@@ -3033,9 +3088,9 @@ function startGuidedTour() {
         lens.className = 'tour-lens';
         document.body.appendChild(lens);
       }
-      lens.style.top = (rect.top - pad) + 'px';
+      lens.style.top  = (rect.top  - pad) + 'px';
       lens.style.left = (rect.left - pad) + 'px';
-      lens.style.width = (rect.width + pad * 2) + 'px';
+      lens.style.width  = (rect.width  + pad * 2) + 'px';
       lens.style.height = (rect.height + pad * 2) + 'px';
 
       if (!tooltip) {
@@ -3048,25 +3103,27 @@ function startGuidedTour() {
         <div class="tour-step-title">${s.title}</div>
         <div class="tour-step-text">${s.text}</div>
         <div class="tour-step-btns">
-          <button class="tour-next-btn" onclick="window._tourNext()">${idx < steps.length - 1 ? 'Suivant →' : 'Terminer ✓'}</button>
+          <button class="tour-next-btn" onclick="window._tourNext()">${isLast ? 'Terminer ✓' : 'Suivant →'}</button>
           <button class="tour-skip-btn" onclick="window._tourEnd()">Passer</button>
         </div>`;
       positionTooltip(rect);
-    }, 200);
+    }, 250);
   }
 
   window._tourNext = () => {
     tourIdx++;
-    if (tourIdx >= steps.length) {
-      window._tourEnd();
-    } else {
-      showStep(tourIdx);
-    }
+    if (tourIdx >= steps.length) { window._tourEnd(); } else { showStep(tourIdx); }
   };
 
   window._tourEnd = () => {
-    if (lens) { lens.remove(); lens = null; }
+    if (lens)    { lens.remove();    lens = null; }
     if (tooltip) { tooltip.remove(); tooltip = null; }
+    // Restore any force-shown elements to their natural hidden state
+    restoredIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !result) el.style.display = 'none';
+    });
+    restoredIds = [];
   };
 
   showStep(0);
