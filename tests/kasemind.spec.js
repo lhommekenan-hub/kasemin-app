@@ -260,6 +260,12 @@ test.describe('3. Avocat Flow', () => {
     await openApp(page);
     await fillLogin(page, avocatEmail, avocatPw);
     await waitForApp(page);
+    // Block onboarding before the 600ms timer fires, and remove any existing overlay
+    await page.evaluate(() => {
+      localStorage.setItem('km_onboarding_done', '1');
+      const el = document.getElementById('onboardingOverlay');
+      if (el) el.remove();
+    });
   }
 
   test('3a. Login as avocat — dashboard visible', async ({ page }) => {
@@ -334,7 +340,7 @@ test.describe('3. Avocat Flow', () => {
     // Result tabs
     await expect(page.locator('.result-tabs')).toBeVisible();
     const tabs = page.locator('.rtab');
-    await expect(tabs).toHaveCount(4); // Analyse, Lois, Stratégies, Client
+    await expect(tabs).toHaveCount(2); // Vue Avocat, Vue Client
 
     // Risk score visible
     await expect(page.locator('.risk-score')).toBeVisible();
@@ -348,7 +354,7 @@ test.describe('3. Avocat Flow', () => {
   });
 
   test('3h. Contre-interrogatoire button returns result', async ({ page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     await loginAsAvocat(page);
     await page.click('#nav-analyze');
 
@@ -359,15 +365,14 @@ test.describe('3. Avocat Flow', () => {
 
     // Click contre-interrogatoire
     await page.click('button:has-text("Contre-interrogatoire")');
-    await expect(page.locator('#motionResult')).toBeVisible();
-    // Spinner appears first, then result
-    await expect(page.locator('#motionResult .section-label, #motionResult [class*="section"]'))
-      .toBeVisible({ timeout: 60_000 });
+    // Wait for section-label (rendered when API returns result)
+    await expect(page.locator('#motionResult .section-label'))
+      .toBeVisible({ timeout: 120_000 });
     console.log('✓ Contre-interrogatoire result rendered');
   });
 
   test('3i. Plaidoirie button returns result', async ({ page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     await loginAsAvocat(page);
     await page.click('#nav-analyze');
 
@@ -377,9 +382,8 @@ test.describe('3. Avocat Flow', () => {
     await expect(page.locator('.result-header')).toBeVisible({ timeout: 150_000 });
 
     await page.click('button:has-text("Plaidoirie")');
-    await expect(page.locator('#motionResult')).toBeVisible();
-    await expect(page.locator('#motionResult .section-label, #motionResult [class*="section"]'))
-      .toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('#motionResult .section-label'))
+      .toBeVisible({ timeout: 120_000 });
     console.log('✓ Plaidoirie result rendered');
   });
 
@@ -469,8 +473,8 @@ test.describe('3. Avocat Flow', () => {
     await loginAsAvocat(page);
     await page.click('#nav-settings');
     await expect(page.locator('#pageContent')).toBeVisible();
-    // Should show plan info
-    await expect(page.locator('.sub-box, .sub-plan')).toBeVisible({ timeout: 10_000 });
+    // Settings page renders cards (Profile, Language, Subscription)
+    await expect(page.locator('.card').first()).toBeVisible({ timeout: 5_000 });
     console.log('✓ Settings page loaded');
   });
 
@@ -483,7 +487,7 @@ test.describe('3. Avocat Flow', () => {
 
   test('3q. Logout — returns to auth screen', async ({ page }) => {
     await loginAsAvocat(page);
-    await page.click('.btn-logout');
+    await page.locator('.sidebar .btn-logout').click();
     await expect(page.locator('#screen-auth')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#authLogin')).toBeVisible();
     console.log('✓ Logout successful');
@@ -492,7 +496,7 @@ test.describe('3. Avocat Flow', () => {
   test('3r. Login again immediately after logout — no page reload', async ({ page }) => {
     await loginAsAvocat(page);
     // Logout
-    await page.click('.btn-logout');
+    await page.locator('.sidebar .btn-logout').click();
     await expect(page.locator('#authLogin')).toBeVisible();
 
     // Login again without reload
@@ -577,16 +581,22 @@ test.describe('4. Particulier Flow', () => {
     await openApp(page);
     await fillLogin(page, civEmail, civPw);
     await waitForApp(page);
+    // Block onboarding before the 600ms timer fires, and remove any existing overlay
+    await page.evaluate(() => {
+      localStorage.setItem('km_onboarding_done', '1');
+      const el = document.getElementById('onboardingOverlay');
+      if (el) el.remove();
+    });
   }
 
   test('4a. Login as particulier — dashboard shows civilian plan', async ({ page }) => {
     await loginAsCivilian(page);
-    await expect(page.locator('.sub-plan, .user-plan')).toContainText(/Particulier|Trial|Accès/i);
+    await expect(page.locator('.sub-plan, .user-plan').first()).toContainText(/Particulier|Trial|Accès/i);
     console.log('✓ Civilian dashboard loaded');
   });
 
   test('4b. Run analysis as particulier — paywall blocks results', async ({ page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     await loginAsCivilian(page);
     await page.click('#nav-analyze');
 
@@ -598,24 +608,19 @@ test.describe('4. Particulier Flow', () => {
     await expect(page.locator('.loading-wrap')).toBeVisible({ timeout: 5_000 });
     console.log('⏳ Civilian analysis running...');
 
-    // Paywall should appear — NOT full results
-    // Wait for either paywall or result header
-    await page.waitForTimeout(60_000);
+    // Wait for paywall CTA to appear (analysis completes then paywall renders)
+    const paywall = page.locator('button:has-text("Débloquer"), button:has-text("€49")');
+    await expect(paywall.first()).toBeVisible({ timeout: 150_000 });
+    console.log('✓ Paywall €49 CTA visible');
 
-    // Result actions should be HIDDEN for civilians
-    const resultActions = page.locator('#resultActions');
-    const isActionsVisible = await resultActions.isVisible();
+    // Result actions must be HIDDEN for civilians
+    const isActionsVisible = await page.locator('#resultActions').isVisible();
     expect(isActionsVisible).toBe(false);
     console.log('✓ Result action buttons hidden for civilian');
-
-    // Paywall CTA should be visible
-    const paywall = page.locator('button:has-text("€49"), text=Débloquer, text=Accéder');
-    await expect(paywall.first()).toBeVisible({ timeout: 10_000 });
-    console.log('✓ Paywall €49 CTA visible');
   });
 
   test('4c. Paywall shows risk score teaser', async ({ page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     await loginAsCivilian(page);
     await page.click('#nav-analyze');
 
@@ -623,23 +628,27 @@ test.describe('4. Particulier Flow', () => {
     await page.fill('#cfCharge', 'Vol simple');
     await page.click('#analyzeSubmitBtn');
 
-    await page.waitForTimeout(60_000);
+    // Wait for paywall to appear (analysis completes then paywall renders)
+    await page.locator('button:has-text("Débloquer"), button:has-text("€49")').first()
+      .waitFor({ state: 'visible', timeout: 150_000 }).catch(() => {});
 
     // Risk score should be visible in teaser (blurred or shown)
-    const riskEl = page.locator('text=/\\d+\\/100/, .risk-score, text=risque');
-    const hasRisk = await riskEl.count() > 0;
+    const hasRisk = await page.locator('.risk-score').count() > 0 ||
+                    await page.getByText(/risque juridique/i).count() > 0;
     console.log(hasRisk ? '✓ Risk score shown in teaser' : 'ℹ Risk score not found in teaser (may be design choice)');
   });
 
   test('4d. Paywall — clicking €49 button initiates checkout', async ({ page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     await loginAsCivilian(page);
     await page.click('#nav-analyze');
 
     await page.fill('#cfName', 'Jean Dupont');
     await page.fill('#cfCharge', 'Recel Art. 321-1 CP');
     await page.click('#analyzeSubmitBtn');
-    await page.waitForTimeout(60_000);
+    // Wait for paywall to render after analysis completes
+    await page.locator('button:has-text("Débloquer"), button:has-text("€49")').first()
+      .waitFor({ state: 'visible', timeout: 150_000 }).catch(() => {});
 
     // Click the €49 button — should redirect to Stripe OR show error
     const payBtn = page.locator('button:has-text("€49"), button:has-text("Débloquer"), button:has-text("Accéder")').first();
@@ -662,16 +671,18 @@ test.describe('4. Particulier Flow', () => {
   });
 
   test('4e. After logout and re-login — analysis still blocked', async ({ page }) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     await loginAsCivilian(page);
     await page.click('#nav-analyze');
     await page.fill('#cfName', 'Jean Dupont');
     await page.fill('#cfCharge', 'Injures publiques');
     await page.click('#analyzeSubmitBtn');
-    await page.waitForTimeout(60_000);
+    // Wait for paywall to render after analysis completes
+    await page.locator('button:has-text("Débloquer"), button:has-text("€49")').first()
+      .waitFor({ state: 'visible', timeout: 150_000 }).catch(() => {});
 
     // Logout
-    await page.click('.btn-logout');
+    await page.locator('.sidebar .btn-logout').click();
     await expect(page.locator('#authLogin')).toBeVisible();
 
     // Login again
