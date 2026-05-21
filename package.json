@@ -1,0 +1,24 @@
+{
+  "name": "kasemin-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lhommekenan-hub/kasemin-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/lhommekenan-hub/kasemin-app/issues"
+  },
+  "homepage": "https://github.com/lhommekenan-hub/kasemin-app#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}
