@@ -74,6 +74,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 
 .auth-box{width:100%;max-width:440px;position:relative;z-index:10;animation:fadeUp .5s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
 
 .auth-logo{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:32px}
 .auth-logo-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);box-shadow:0 4px 20px rgba(201,168,76,.3)}
@@ -300,6 +302,25 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
   .mobile-nav-bar{display:flex}
   #screen-app.active{padding-top:56px}
 }
+
+/* ===== PREMIUM ENHANCEMENTS ===== */
+.stat-card{position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .3s}
+.stat-card:hover::after{opacity:.6}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 2px 12px rgba(201,168,76,.2);transition:all .2s}
+.btn-gold:hover{background:linear-gradient(135deg,var(--gold2),#f0d87a);box-shadow:0 4px 20px rgba(201,168,76,.35);transform:translateY(-1px)}
+.card{transition:box-shadow .2s}
+.card:hover{box-shadow:var(--shadow-md)}
+.page-header{background:linear-gradient(to right,white,#fafbfd)}
+.auth-card{box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.strategy-card{box-shadow:0 4px 20px rgba(10,22,40,.3)}
+.strategy-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.4}
+.result-header{background:linear-gradient(135deg,var(--navy),var(--navy2),#1a3a7a);box-shadow:0 4px 20px rgba(10,22,40,.2)}
+.section-label{font-size:11px}
+.pt{transition:all .15s}
+.pt:hover{border-color:var(--gold);background:var(--gold-light)}
+.case-row:hover{background:var(--bg);border-radius:var(--radius-xs);padding-left:4px}
+.auth-logo-icon{box-shadow:0 6px 24px rgba(201,168,76,.4)}
 </style>
 </head>
 <body>
@@ -400,9 +421,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
       <div class="form-group">
         <label class="form-label">Vous êtes</label>
-        <select class="form-input" id="regUserType" onchange="toggleBarField()" style="background:rgba(255,255,255,.07);color:white;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13px;outline:none;width:100%">
-          <option value="lawyer" >⚖️ Avocat / Juriste</option>
-          <option value="civilian" >👤 Particulier / Justiciable</option>
+        <select class="form-input" id="regUserType" onchange="toggleBarField()" style="background:#0f2044;color:white;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13px;outline:none;width:100%">
+          <option value="lawyer" style="background:#0f2044;color:white">⚖️ Avocat / Juriste</option>
+          <option value="civilian" style="background:#0f2044;color:white">👤 Particulier / Justiciable</option>
         </select>
       </div>
       <div class="form-group" id="barFieldWrap">
@@ -1010,6 +1031,7 @@ function showApp() {
   checkLFStatus();
   loadCases();
   setPage('dashboard');
+  setTimeout(() => checkOnboarding(), 600);
   // If civilian just returned from payment, show rating after a delay
   if (window._justPaid && isCivilian()) {
     window._justPaid = false;
@@ -1153,8 +1175,17 @@ function renderDashboard(container) {
         <div class="card" style="margin-bottom:14px">
           <div class="card-body">
             <div class="sub-box">
-              <div class="sub-plan">KaseMind ${currentUser?.plan==='firm'?'Cabinet':currentUser?.plan==='solo'?'Solo':'Trial'}</div>
-              <div class="sub-exp">${lang==='fr'?'Essai gratuit — 14 jours':'Free trial — 14 days'}</div>
+              <div class="sub-plan">KaseMind ${isCivilian()?'Particulier':currentUser?.plan==='firm'?'Cabinet':currentUser?.plan==='solo'?'Solo':'Trial'}</div>
+              <div class="sub-exp">${isCivilian()?'Accès par dossier — €49':lang==='fr'?'Essai gratuit — 14 jours':'Free trial — 14 days'}</div>
+              ${isCivilian()?`
+              <div class="sub-feat">✓ Analyse complète de votre dossier</div>
+              <div class="sub-feat">✓ Stratégie de défense personnalisée</div>
+              <div class="sub-feat">✓ Jurisprudence officielle Judilibre</div>
+              <div class="sub-feat">✓ Accès permanent · Paiement unique</div>
+              <button class="btn btn-gold" style="width:100%;margin-top:16px;justify-content:center" onclick="setPage('analyze')">
+                🔍 Analyser mon dossier — €49
+              </button>
+              `:`
               <div class="sub-feat">${lang==='fr'?'Légifrance + Judilibre illimité':'Unlimited Légifrance + Judilibre'}</div>
               <div class="sub-feat">${lang==='fr'?'Analyses illimitées':'Unlimited analyses'}</div>
               <div class="sub-feat">RGPD ${lang==='fr'?'conforme':'compliant'}</div>
@@ -1163,7 +1194,7 @@ function renderDashboard(container) {
               <button class="btn btn-gold" style="width:100%;margin-top:16px;justify-content:center" onclick="startCheckout('solo')">
                 ${lang==='fr'?'Passer à Solo €99/mois':'Upgrade to Solo €99/mo'}
               </button>
-
+              `}
             </div>
           </div>
         </div>
@@ -2536,17 +2567,28 @@ async function runMotionAction(action, caseId) {
     });
 
     const data = await resp.json();
-    if (!resp.ok) { toast(data.error || 'Erreur', 'e'); if(container) container.innerHTML=''; return; }
+    if (!resp.ok) {
+      const msg = data.error || 'Erreur lors de la génération';
+      toast(msg, 'e');
+      if (container) container.innerHTML = `<div style="padding:16px;background:var(--danger-light);border:1px solid rgba(220,38,38,.2);border-radius:10px;font-size:13px;color:var(--danger)">${msg}</div>`;
+      return;
+    }
+
+    if (!data.result) {
+      if (container) container.innerHTML = `<div style="padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--muted);text-align:center">Aucun résultat généré — réessayez avec plus de contexte.</div>`;
+      return;
+    }
 
     renderMotionResult(action, data.result, container);
   } catch(e) {
     toast('Erreur de connexion', 'e');
-    if (container) container.innerHTML = '';
+    if (container) container.innerHTML = `<div style="padding:16px;background:var(--danger-light);border:1px solid rgba(220,38,38,.2);border-radius:10px;font-size:13px;color:var(--danger)">Erreur de connexion — vérifiez votre réseau.</div>`;
   }
 }
 
 function renderMotionResult(action, r, container) {
-  if (!container || !r) return;
+  if (!container) return;
+  if (!r) { container.innerHTML = ''; return; }
 
   if (action === 'crossExam') {
     container.innerHTML = `
@@ -2789,6 +2831,109 @@ function updateTrialBanner() {
   }
 }
 
+// ===== ONBOARDING TOUR =====
+function checkOnboarding() {
+  if (localStorage.getItem('km_onboarding_done')) return;
+  showOnboardingTour();
+}
+
+function showOnboardingTour() {
+  const steps = isCivilian() ? [
+    {
+      icon: '⚖️',
+      title: 'Bienvenue sur KaseMind',
+      body: 'KaseMind analyse votre dossier pénal grâce à l\'intelligence artificielle et la jurisprudence officielle (Judilibre / Légifrance).',
+      cta: 'Suivant →'
+    },
+    {
+      icon: '📂',
+      title: 'Déposez vos documents',
+      body: 'Importez votre convocation, PV de police, ou tout document de votre affaire. KaseMind les lit et construit une analyse juridique complète.',
+      cta: 'Suivant →'
+    },
+    {
+      icon: '🔓',
+      title: 'Débloquez votre rapport',
+      body: 'Après l\'analyse, obtenez le rapport complet : stratégie de défense, failles du dossier adverse, plaidoirie — pour 49 € paiement unique.',
+      cta: 'Commencer →'
+    }
+  ] : [
+    {
+      icon: '⚖️',
+      title: 'Bienvenue, Maître',
+      body: 'KaseMind est votre assistant juridique IA. Il analyse vos dossiers pénaux en combinant l\'IA Claude et les bases officielles Légifrance + Judilibre.',
+      cta: 'Suivant →'
+    },
+    {
+      icon: '🔍',
+      title: 'Analysez un dossier',
+      body: 'Renseignez le nom de votre client, la charge, et uploadez les pièces (PDF, Word). L\'analyse produit 10 sections : stratégie, risques, jurisprudence, plaidoirie...',
+      cta: 'Suivant →'
+    },
+    {
+      icon: '🛠️',
+      title: 'Outils avancés',
+      body: 'Après l\'analyse, utilisez le contre-interrogatoire, la détection de contradictions, la timeline procédurale et le portail client sécurisé.',
+      cta: 'Suivant →'
+    },
+    {
+      icon: '👤',
+      title: 'Portail client',
+      body: 'Générez un code d\'accès (ex : KM-XXXX) pour que votre client consulte son dossier directement. Partageable par SMS ou WhatsApp.',
+      cta: 'Commencer →'
+    }
+  ];
+
+  let step = 0;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'onboardingOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,.85);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);animation:fadeIn .3s ease';
+
+  function render() {
+    const s = steps[step];
+    const isLast = step === steps.length - 1;
+    overlay.innerHTML = `
+      <div style="background:var(--navy2);border:1.5px solid rgba(201,168,76,.3);border-radius:20px;width:100%;max-width:440px;margin:20px;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:fadeUp .3s ease;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#0f2044,#162d5e);padding:32px 32px 24px;text-align:center">
+          <div style="font-size:52px;margin-bottom:12px">${s.icon}</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:white;margin-bottom:8px">${s.title}</div>
+          <div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.7">${s.body}</div>
+        </div>
+        <div style="padding:20px 32px 28px">
+          <div style="display:flex;gap:6px;justify-content:center;margin-bottom:24px">
+            ${steps.map((_,i) => `<div style="width:${i===step?24:8}px;height:8px;border-radius:4px;background:${i===step?'var(--gold)':'rgba(255,255,255,.15)'};transition:all .3s"></div>`).join('')}
+          </div>
+          <button onclick="window._onboardingNext()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,.3)">
+            ${s.cta}
+          </button>
+          <button onclick="window._onboardingSkip()" style="width:100%;padding:10px;background:transparent;border:none;color:rgba(255,255,255,.3);font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer;margin-top:8px">
+            Passer l'introduction
+          </button>
+        </div>
+      </div>`;
+  }
+
+  window._onboardingNext = () => {
+    step++;
+    if (step >= steps.length) {
+      window._onboardingSkip();
+      if (!isCivilian()) setPage('analyze');
+    } else {
+      render();
+    }
+  };
+
+  window._onboardingSkip = () => {
+    localStorage.setItem('km_onboarding_done', '1');
+    overlay.style.animation = 'fadeOut .2s ease forwards';
+    setTimeout(() => overlay.remove(), 200);
+  };
+
+  render();
+  document.body.appendChild(overlay);
+}
+
 // ===== PAYWALL (trial expired) =====
 function isCivilian() {
   // If the current case was paid and unlocked, treat as not-civilian (show full analysis)
@@ -2840,46 +2985,91 @@ function showPaywall(container) {
 
 function showCivilianPaywall(container, caseId) {
   // Civilian paywall — €49 per case only. No monthly subscription shown.
+  const riskLabel = result?.risk_level === 'high' ? '🔴 Élevé' : result?.risk_level === 'medium' ? '🟡 Moyen' : '🟢 Faible';
+  const riskScore = result?.risk_score ? `${result.risk_score}/100` : '';
+  const weaknessCount = (result?.prosecution_weaknesses || []).length;
+  const strengthCount = (result?.defense_strengths || []).length;
+  const summaryPreview = result?.summary ? result.summary.substring(0, 200) + '…' : 'Résumé généré par IA';
+  const firstWeakness = result?.prosecution_weaknesses?.[0] || '';
+  const firstStrength = result?.defense_strengths?.[0] || '';
+
   container.innerHTML = `
     <div style="margin:24px 0">
-      <div style="background:rgba(0,0,0,.3);border:1.5px solid rgba(201,168,76,.35);border-radius:14px;overflow:hidden">
-        <div style="background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.03));padding:24px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)">
-          <div style="font-size:13px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Aperçu de votre analyse</div>
-          <div style="font-size:28px;font-weight:600;font-family:'Cormorant Garamond',serif;color:white;margin-bottom:4px">Votre dossier a été analysé</div>
-          <div style="font-size:13px;color:rgba(255,255,255,.5)">Débloquez le rapport complet pour accéder à tous les résultats</div>
+      <div style="background:var(--navy2);border:1.5px solid rgba(201,168,76,.4);border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg,#0f2044,#162d5e);padding:28px 24px;text-align:center;border-bottom:1px solid rgba(201,168,76,.2)">
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px">
+            ✨ Analyse complète prête
+          </div>
+          <div style="font-size:30px;font-weight:600;font-family:'Cormorant Garamond',serif;color:white;margin-bottom:8px">Votre dossier a été analysé</div>
+          <div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.6">KaseMind a évalué votre situation juridique.<br>Débloquez le rapport complet ci-dessous.</div>
         </div>
-        <div style="padding:20px">
-          <div style="margin-bottom:16px">
+
+        <!-- Teaser visible results -->
+        <div style="padding:20px 24px">
+          <!-- Risk score banner -->
+          <div style="background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.04));border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Niveau de risque juridique</div>
+              <div style="font-size:22px;font-weight:700;color:white">${riskLabel}${riskScore ? ' · ' + riskScore : ''}</div>
+            </div>
+            <div style="font-size:36px">⚖️</div>
+          </div>
+
+          <!-- Summary teaser -->
+          <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📋 Aperçu du résumé</div>
+            <div style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.7">${summaryPreview}</div>
+          </div>
+
+          <!-- Teaser stats -->
+          ${(weaknessCount > 0 || strengthCount > 0) ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            ${weaknessCount > 0 ? `
+            <div style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:14px;text-align:center">
+              <div style="font-size:28px;font-weight:700;color:#f87171">${weaknessCount}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px">faille${weaknessCount > 1 ? 's' : ''} identifiée${weaknessCount > 1 ? 's' : ''}</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:6px;font-style:italic;filter:blur(3px);user-select:none">${firstWeakness.substring(0,40) || '—'}</div>
+            </div>
+            ` : ''}
+            ${strengthCount > 0 ? `
+            <div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:10px;padding:14px;text-align:center">
+              <div style="font-size:28px;font-weight:700;color:#4ade80">${strengthCount}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px">atout${strengthCount > 1 ? 's' : ''} de défense</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:6px;font-style:italic;filter:blur(3px);user-select:none">${firstStrength.substring(0,40) || '—'}</div>
+            </div>
+            ` : ''}
+          </div>
+          ` : ''}
+
+          <!-- Locked sections list -->
+          <div style="margin-bottom:20px">
             ${[
-              ['⚖️ Niveau de risque','Niveau évalué — ' + (result?.risk_level === 'high' ? '🔴 Élevé' : result?.risk_level === 'medium' ? '🟡 Moyen' : '🟢 Faible'),'visible'],
-              ['📋 Résumé du dossier', result?.summary ? result.summary.substring(0,120)+'...' : 'Résumé généré', 'visible'],
-              ['🔒 Stratégies de défense complètes','3 stratégies personnalisées identifiées','locked'],
-              ['🔒 Contre-interrogatoire','Questions mot à mot pour chaque témoin','locked'],
-              ['🔒 Plaidoirie rédigée','Discours complet prêt à prononcer','locked'],
-              ['🔒 Contradictions détectées','Failles exploitables dans le dossier','locked'],
-              ['🔒 Timeline procédurale','Calendrier complet jusqu\'au jugement','locked'],
-            ].map(([icon, text, state]) => `
+              ['🔒 Stratégie de défense complète', 'Arguments, articles de loi, jurisprudence'],
+              ['🔒 Contre-interrogatoire','Questions préparées pour chaque témoin'],
+              ['🔒 Plaidoirie rédigée','Discours complet prêt à lire'],
+              ['🔒 Contradictions exploitables','Failles détectées dans le dossier adverse'],
+              ['🔒 Timeline procédurale','Calendrier jusqu\'au jugement'],
+            ].map(([label, sub]) => `
               <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">
-                <div style="font-size:13px;${state==='locked'?'filter:blur(0px)':''}">${icon}</div>
-                <div style="flex:1;font-size:13px;color:${state==='locked'?'rgba(255,255,255,.25)':'rgba(255,255,255,.8)'}">
-                  ${state==='locked' ? '<span style="filter:blur(4px);user-select:none">' + text + '</span>' : text}
+                <div style="width:32px;height:32px;background:rgba(255,255,255,.05);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🔒</div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.6);filter:blur(0)">${label}</div>
+                  <div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:2px;filter:blur(3px);user-select:none">${sub}</div>
                 </div>
-                ${state==='locked'?'<div style="font-size:10px;color:rgba(255,255,255,.25);font-weight:700">🔒</div>':'<div style="font-size:10px;color:var(--success);font-weight:700">✓</div>'}
               </div>
             `).join('')}
           </div>
-          <div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:16px;text-align:center;margin-bottom:14px">
-            <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">Accès complet — 1 dossier</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:700;color:white;margin-bottom:4px">€49</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:16px">Paiement unique · Accès permanent à ce dossier</div>
-            <button onclick="startCheckout('single_case')" style="width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:8px">
-              Débloquer mon analyse — €49
+
+          <!-- CTA -->
+          <div style="background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.04));border:1.5px solid rgba(201,168,76,.35);border-radius:12px;padding:20px;text-align:center">
+            <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Accès complet — 1 dossier</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:700;color:white;line-height:1">€49</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.4);margin:6px 0 18px">Paiement unique · Accès permanent · Sans abonnement</div>
+            <button onclick="startCheckout('single_case')" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:10px;box-shadow:0 4px 20px rgba(201,168,76,.35);transition:all .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+              Débloquer mon analyse complète — €49 →
             </button>
-            <div style="font-size:11px;color:rgba(255,255,255,.3)">Paiement sécurisé par Stripe · Sans abonnement</div>
-          </div>
-          <div style="font-size:11px;color:rgba(255,255,255,.25);text-align:center;line-height:1.6">
-            🔒 Vos documents sont chiffrés et hébergés en Europe (Frankfurt).<br>
-            KaseMind est un outil d'aide à la décision — pas un conseil juridique.
+            <div style="font-size:11px;color:rgba(255,255,255,.3)">🔐 Paiement sécurisé Stripe · Données hébergées en Europe</div>
           </div>
         </div>
       </div>
