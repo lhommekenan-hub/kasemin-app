@@ -321,6 +321,16 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .pt:hover{border-color:var(--gold);background:var(--gold-light)}
 .case-row:hover{background:var(--bg);border-radius:var(--radius-xs);padding-left:4px}
 .auth-logo-icon{box-shadow:0 6px 24px rgba(201,168,76,.4)}
+
+/* ===== GUIDED TOUR ===== */
+.tour-lens{position:fixed;border:2px solid var(--gold);border-radius:10px;box-shadow:0 0 0 9999px rgba(10,22,40,.78),0 0 0 4px rgba(201,168,76,.15);z-index:10001;pointer-events:none;transition:top .4s cubic-bezier(.4,0,.2,1),left .4s cubic-bezier(.4,0,.2,1),width .4s cubic-bezier(.4,0,.2,1),height .4s cubic-bezier(.4,0,.2,1)}
+.tour-tooltip{position:fixed;z-index:10002;max-width:300px;min-width:220px;background:var(--navy2);border:1.5px solid rgba(201,168,76,.45);border-radius:14px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:fadeUp .3s ease}
+.tour-step-num{font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.tour-step-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:white;margin-bottom:6px}
+.tour-step-text{font-size:13px;color:rgba(255,255,255,.65);line-height:1.6;margin-bottom:14px}
+.tour-step-btns{display:flex;gap:8px}
+.tour-next-btn{flex:1;padding:10px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:8px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.tour-skip-btn{padding:10px 14px;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.4);font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -543,7 +553,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       <button class="nav-item active" id="nav-dashboard" onclick="setPage('dashboard')">
         <span class="nav-icon">🏠</span>Tableau de bord
       </button>
-      <button class="nav-item" id="nav-analyze" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:'',profile:{casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''},charges:[]};window._currentCaseId=null;setPage('analyze')">
+      <button class="nav-item" id="nav-analyze" onclick="result=null;files=[];cf={name:'',charge:'',court:'',date:'',context:'',profile:{casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''},charges:[]};window._currentCaseId=null;window._caseUnlocked=false;setPage('analyze')">
         <span class="nav-icon">🔍</span>Analyser un dossier
       </button>
       <button class="nav-item" id="nav-cases" onclick="setPage('cases')">
@@ -889,9 +899,23 @@ async function loadUserProfile(user) {
 async function doLogout() {
   await sb.auth.signOut();
   currentUser = null;
+  currentFirm = null;
   currentSession = null;
   cases = [];
   result = null;
+  window._caseUnlocked = false;
+  window._currentCaseId = null;
+  localStorage.removeItem('km_token');
+
+  // Re-enable auth buttons so login works immediately without a page reload
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Se Connecter'; }
+  const regBtn = document.getElementById('regBtn');
+  if (regBtn) { regBtn.disabled = false; regBtn.textContent = 'Créer mon compte gratuit'; }
+  const loginErr = document.getElementById('loginError');
+  if (loginErr) { loginErr.style.display = 'none'; loginErr.textContent = ''; }
+
+  switchAuthTab('login');
   document.getElementById('screen-auth').classList.add('active');
   document.getElementById('screen-app').classList.remove('active');
   toast(t('toastLogout'), 'i');
@@ -1228,6 +1252,8 @@ function renderDashboard(container) {
     row.onclick = () => {
       cf = { name:c.client_name||c.name, charge:c.charge||'', court:c.court||'', date:c.hearing_date||c.date||'', context:'', profile: c.client_profile || {casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''}, charges: c.charges_json || [] };
       result = c.result || null;
+      if (c.id) window._currentCaseId = c.id;
+      if (c.is_unlocked) { setCaseUnlocked(c.id); } else { window._caseUnlocked = false; }
       setPage('analyze');
     };
     dc.appendChild(row);
@@ -1354,7 +1380,7 @@ function renderAnalyze(container) {
         </div>
       </div>
 
-      <button class="btn btn-gold" style="width:100%;justify-content:center;padding:14px" onclick="doAnalyze()">${t('analyzeBtn')}</button>
+      <button id="analyzeSubmitBtn" class="btn btn-gold" style="width:100%;justify-content:center;padding:14px" onclick="doAnalyze()">${t('analyzeBtn')}</button>
     </div>
     ${result ? renderResultHTML(result) : ''}
   </div>`;
@@ -2233,9 +2259,9 @@ function renderCases(container) {
       cf = { name:cs.client_name||cs.name, charge:cs.charge||'', court:cs.court||'', date:cs.hearing_date||cs.date||'', context:'', profile: cs.client_profile || {casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''}, charges: cs.charges_json || [] };
       result = cs.analysis_json || cs.result || null;
       if (cs.id) window._currentCaseId = cs.id;
-      // If civilian paid for this case, mark it as unlocked for this session
+      // If civilian paid for this case, mark it as unlocked (persists across sessions)
       if (cs.is_unlocked) {
-        window._caseUnlocked = true;
+        setCaseUnlocked(cs.id);
         setTimeout(checkCivilianRating, 2000);
       } else {
         window._caseUnlocked = false;
@@ -2918,7 +2944,8 @@ function showOnboardingTour() {
     step++;
     if (step >= steps.length) {
       window._onboardingSkip();
-      if (!isCivilian()) setPage('analyze');
+      // Launch guided spotlight tour after modal closes
+      setTimeout(() => startGuidedTour(), 350);
     } else {
       render();
     }
@@ -2934,10 +2961,142 @@ function showOnboardingTour() {
   document.body.appendChild(overlay);
 }
 
+// ===== GUIDED SPOTLIGHT TOUR =====
+function startGuidedTour() {
+  // Ensure we're on the analyze page
+  setPage('analyze');
+
+  const isCiv = isCivilian();
+
+  // Define steps: target element ID, title, body text
+  const steps = isCiv ? [
+    { id: 'cfName',          title: 'Votre nom',       text: 'Saisissez votre prénom et nom ici.', num: '1/4' },
+    { id: 'cfCharge',        title: 'Le chef retenu',  text: 'Indiquez l\'infraction reprochée (ex : vol, violence, escroquerie…).', num: '2/4' },
+    { id: 'cfCtx',           title: 'Contexte',        text: 'Décrivez les faits en quelques mots. Plus le contexte est précis, plus l\'analyse sera pertinente.', num: '3/4' },
+    { id: 'analyzeSubmitBtn',title: 'Lancer l\'analyse',text: 'Cliquez ici pour lancer l\'analyse IA. Résultat en ~30 secondes.', num: '4/4' }
+  ] : [
+    { id: 'cfName',          title: 'Nom du client',   text: 'Saisissez le nom de votre client ou de la personne mise en cause.', num: '1/4' },
+    { id: 'cfCharge',        title: 'Chef d\'inculpation', text: 'Indiquez l\'infraction reprochée (ex : vol aggravé Art. 311-4 CP).', num: '2/4' },
+    { id: 'cfCtx',           title: 'Contexte du dossier', text: 'Décrivez les faits et le contexte procédural. Plus vous donnez de détails, plus l\'analyse est précise.', num: '3/4' },
+    { id: 'analyzeSubmitBtn',title: 'Lancer l\'analyse', text: 'Cliquez ici pour lancer l\'analyse complète avec Légifrance + Judilibre + Claude AI.', num: '4/4' }
+  ];
+
+  let tourIdx = 0;
+  let lens = null;
+  let tooltip = null;
+
+  function getTourEl(id) {
+    return document.getElementById(id);
+  }
+
+  function positionTooltip(rect) {
+    const vpW = window.innerWidth;
+    const vpH = window.innerHeight;
+    const tW = 300;
+    const tH = 160;
+    let top, left;
+
+    // Prefer below, fallback above, then right
+    if (rect.bottom + tH + 16 < vpH) {
+      top = rect.bottom + 12;
+      left = Math.max(12, Math.min(rect.left, vpW - tW - 12));
+    } else if (rect.top - tH - 16 > 0) {
+      top = rect.top - tH - 12;
+      left = Math.max(12, Math.min(rect.left, vpW - tW - 12));
+    } else {
+      top = Math.max(12, rect.top);
+      left = rect.right + 12 < vpW - tW ? rect.right + 12 : Math.max(12, rect.left - tW - 12);
+    }
+    tooltip.style.top = top + 'px';
+    tooltip.style.left = left + 'px';
+  }
+
+  function showStep(idx) {
+    const s = steps[idx];
+    // Wait briefly for DOM if needed (e.g. page just rendered)
+    const el = getTourEl(s.id);
+    if (!el) {
+      // Element not yet in DOM — wait and retry
+      setTimeout(() => showStep(idx), 200);
+      return;
+    }
+
+    // Scroll element into view
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    setTimeout(() => {
+      const rect = el.getBoundingClientRect();
+      const pad = 8;
+
+      if (!lens) {
+        lens = document.createElement('div');
+        lens.className = 'tour-lens';
+        document.body.appendChild(lens);
+      }
+      lens.style.top = (rect.top - pad) + 'px';
+      lens.style.left = (rect.left - pad) + 'px';
+      lens.style.width = (rect.width + pad * 2) + 'px';
+      lens.style.height = (rect.height + pad * 2) + 'px';
+
+      if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.className = 'tour-tooltip';
+        document.body.appendChild(tooltip);
+      }
+      tooltip.innerHTML = `
+        <div class="tour-step-num">${s.num}</div>
+        <div class="tour-step-title">${s.title}</div>
+        <div class="tour-step-text">${s.text}</div>
+        <div class="tour-step-btns">
+          <button class="tour-next-btn" onclick="window._tourNext()">${idx < steps.length - 1 ? 'Suivant →' : 'Terminer ✓'}</button>
+          <button class="tour-skip-btn" onclick="window._tourEnd()">Passer</button>
+        </div>`;
+      positionTooltip(rect);
+    }, 200);
+  }
+
+  window._tourNext = () => {
+    tourIdx++;
+    if (tourIdx >= steps.length) {
+      window._tourEnd();
+    } else {
+      showStep(tourIdx);
+    }
+  };
+
+  window._tourEnd = () => {
+    if (lens) { lens.remove(); lens = null; }
+    if (tooltip) { tooltip.remove(); tooltip = null; }
+  };
+
+  showStep(0);
+}
+
 // ===== PAYWALL (trial expired) =====
+
+// Persist a case unlock to localStorage so it survives logout/login
+function setCaseUnlocked(caseId) {
+  window._caseUnlocked = true;
+  if (caseId) {
+    try {
+      const unlocked = JSON.parse(localStorage.getItem('km_unlocked_cases') || '[]');
+      const id = String(caseId);
+      if (!unlocked.includes(id)) { unlocked.push(id); localStorage.setItem('km_unlocked_cases', JSON.stringify(unlocked)); }
+    } catch(e) {}
+  }
+}
+
 function isCivilian() {
-  // If the current case was paid and unlocked, treat as not-civilian (show full analysis)
+  // Session-level unlock (current case loaded from DB with is_unlocked=true)
   if (window._caseUnlocked) return false;
+  // Persistent unlock: check if current case ID is in the paid-cases list
+  const uid = String(window._currentCaseId || '');
+  if (uid && uid !== 'null' && uid !== 'undefined' && uid !== 'new' && uid !== 'direct') {
+    try {
+      const unlocked = JSON.parse(localStorage.getItem('km_unlocked_cases') || '[]');
+      if (unlocked.includes(uid)) return false;
+    } catch(e) {}
+  }
   return (currentUser?.userType === 'civilian') || (currentFirm?.user_type === 'civilian');
 }
 
@@ -3209,6 +3368,7 @@ function mobileNav(page) {
     result=null;files=[];
     cf={name:'',charge:'',court:'',date:'',context:'',profile:{casier:'',condamnations:'',sursis:'',autresDossiers:'',situationPerso:''},charges:[]};
     window._currentCaseId=null;
+    window._caseUnlocked=false;
   }
   setPage(page);
 }
@@ -3231,9 +3391,11 @@ async function init() {
   if (urlParams.get('payment') === 'success') {
     const plan = urlParams.get('plan');
     if (plan === 'single_case') {
-      // Civilian just paid - show rating after they see their analysis
       window._justPaid = true;
-      localStorage.setItem('km_just_paid_case', urlParams.get('case') || '');
+      const paidCaseId = urlParams.get('case') || '';
+      localStorage.setItem('km_just_paid_case', paidCaseId);
+      // Persist the unlock so paywall stays open after logout/login
+      if (paidCaseId) setCaseUnlocked(paidCaseId);
     }
     // Clean URL
     window.history.replaceState({}, '', window.location.pathname);
