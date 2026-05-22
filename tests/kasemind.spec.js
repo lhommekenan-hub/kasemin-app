@@ -8,7 +8,7 @@ const AVOCAT = {
   password: 'TestAvocat123!',
   firstName: 'Maître',
   lastName: 'Testeur',
-  barNumber: '75B1234',
+  barNumber: 'C1234',
 };
 const PARTICULIER = {
   email: `test.particulier.${RUN_ID}@kasemind-test.fr`,

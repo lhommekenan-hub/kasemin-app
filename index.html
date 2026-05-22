@@ -525,8 +525,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       </div>
       <div class="form-group" id="barFieldWrap">
         <label class="form-label">Numéro de Barreau</label>
-        <input class="form-input" id="regBar" placeholder="Ex: 75B1234 — Barreau de Paris" oninput="validateBarNumber(this.value)">
-        <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:4px" id="barHint">Requis pour l'accès essai gratuit 14 jours</div>
+        <input class="form-input" id="regBar" placeholder="Ex: C1234, D5678" oninput="validateBarNumber(this.value)">
+        <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:4px" id="barHint">Format : C1234, D5678 — commence par une lettre, 2-8 caractères</div>
       </div>
       <div class="form-group" id="civilianInfoWrap" style="display:none">
         <div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:12px 14px">
@@ -847,12 +847,20 @@ async function doRegister() {
     errEl.style.display = 'block';
     return;
   }
-  // Soft bar number validation for lawyers
   const userType = document.getElementById('regUserType')?.value || 'lawyer';
-  if (userType === 'lawyer' && bar && bar.trim().length < 3) {
-    errEl.textContent = 'Numéro de barreau invalide. Format attendu: ex. 75B1234 ou BT123.';
-    errEl.style.display = 'block';
-    return;
+  if (userType === 'lawyer') {
+    if (!bar) {
+      errEl.textContent = 'Le numéro de barreau est requis pour les avocats.';
+      errEl.style.display = 'block';
+      return;
+    }
+    const barUp = bar.toUpperCase();
+    const barValid = barUp.length >= 2 && barUp.length <= 8 && /^[A-Z]/.test(barUp) && /[0-9]/.test(barUp) && /^[A-Z0-9]+$/.test(barUp);
+    if (!barValid) {
+      errEl.textContent = 'Numéro de barreau invalide. Veuillez vérifier votre numéro.';
+      errEl.style.display = 'block';
+      return;
+    }
   }
 
   const pwConfirm = document.getElementById('regPwConfirm').value;
@@ -1163,8 +1171,9 @@ function showApp() {
   const mobileNameEl = document.getElementById('mobileUserName');
   const mobilePlanEl = document.getElementById('mobileUserPlan');
   if (mobileNameEl) mobileNameEl.textContent = name;
-  if (mobilePlanEl) mobilePlanEl.textContent = currentUser?.plan === 'solo' ? 'Solo · Actif' : currentUser?.plan === 'firm' ? 'Cabinet · Actif' : 'Trial · 14 jours';
+  if (mobilePlanEl) mobilePlanEl.textContent = isCivilian() ? 'Particulier · Actif' : currentUser?.plan === 'solo' ? 'Solo · Actif' : currentUser?.plan === 'firm' ? 'Cabinet · Actif' : 'Trial · 14 jours';
   document.getElementById('sidebarPlan').textContent =
+    isCivilian() ? 'Particulier · Actif' :
     currentUser?.plan === 'solo' ? 'Solo · Actif' :
     currentUser?.plan === 'firm' ? 'Cabinet · Actif' :
     'Trial · 14 jours';
@@ -1302,9 +1311,10 @@ function renderDashboard(container) {
       <div class="stat-card"><div class="stat-icon">📁</div><div class="stat-value">${cases.length}</div><div class="stat-label">${lang==='fr'?'Dossiers analysés':'Cases analyzed'}</div></div>
       <div class="stat-card"><div class="stat-icon">📜</div><div class="stat-value">${cases.length * 7}</div><div class="stat-label">${lang==='fr'?'Articles consultés':'Articles consulted'}</div></div>
       ${(()=>{
+        if (isCivilian()) return '';
         const trialEnds = currentFirm?.trial_ends_at;
         const plan = currentFirm?.plan || 'trial';
-        if ((plan === 'solo' || plan === 'firm') && !isCivilian()) {
+        if (plan === 'solo' || plan === 'firm') {
           return `<div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value" style="font-size:20px;margin-top:4px">${plan==='firm'?'Cabinet':'Solo'}</div><div class="stat-label">${lang==='fr'?'Plan actif':'Active plan'}</div></div>`;
         }
         const daysLeft = trialEnds ? Math.max(0, Math.ceil((new Date(trialEnds) - new Date()) / (1000*60*60*24))) : 14;
@@ -2994,6 +3004,7 @@ function updateTrialBanner() {
   const banner = document.getElementById('trialBanner');
   const daysText = document.getElementById('trialDaysText');
   if (!banner || !currentFirm) return;
+  if (isCivilian()) { banner.style.display = 'none'; return; }
 
   const plan = currentFirm.plan || 'trial';
   const trialEnds = currentFirm.trial_ends_at;
@@ -3769,17 +3780,17 @@ function validateBarNumber(val) {
   const hint = document.getElementById('barHint');
   if (!hint) return;
   if (!val || val.length < 2) {
-    hint.textContent = "Requis pour l'accès essai gratuit 14 jours";
+    hint.textContent = 'Format : C1234, D5678 — commence par une lettre, 2-8 caractères';
     hint.style.color = 'rgba(255,255,255,.3)';
     return;
   }
-  // Valid formats: 75B1234, BT123, 971B456, etc.
-  const valid = /^[0-9A-Z]{2,12}$/i.test(val.trim());
+  const v = val.trim().toUpperCase();
+  const valid = v.length >= 2 && v.length <= 8 && /^[A-Z]/.test(v) && /[0-9]/.test(v) && /^[A-Z0-9]+$/.test(v);
   if (valid) {
     hint.textContent = '✓ Format valide';
     hint.style.color = '#4ade80';
   } else {
-    hint.textContent = 'Format attendu: 75B1234 ou BT0123';
+    hint.textContent = 'Format invalide. Doit commencer par une lettre et contenir au moins un chiffre (ex: C1234)';
     hint.style.color = '#fbbf24';
   }
 }
