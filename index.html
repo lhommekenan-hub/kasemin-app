@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KaseMind — Application</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Sentry — replace DSN after creating account at sentry.io/signup -->
 <script>
@@ -41,18 +41,42 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --navy:#0a1628;--navy2:#0f2044;--navy3:#162d5e;
-  --gold:#c9a84c;--gold2:#e8c96a;--gold-light:#fdf6e3;
-  --bg:#f8f9fc;--card:#ffffff;--border:#e2e8f4;--border2:#c8d4e8;
-  --text:#0a1628;--muted:#64748b;--light:#94a3b8;
+  /* Brand palette */
+  --navy:#050d1a;--navy2:#0a1628;--navy3:#0f2044;--navy4:#162d5e;
+  --gold:#c9a84c;--gold2:#e8c96a;--gold3:#f5e09a;--gold-light:rgba(201,168,76,.07);
+  --gold-glow:rgba(201,168,76,.28);
+  /* App surfaces */
+  --bg:#f0f3f9;--card:#ffffff;--border:#e2e8f0;--border2:#c8d4e8;
+  --text:#050d1a;--muted:#5a6a82;--light:#94a3b8;
+  /* Status */
   --success:#16a34a;--success-light:#dcfce7;
   --danger:#dc2626;--danger-light:#fee2e2;
   --warn:#d97706;--warn-light:#fef3c7;
-  --radius:16px;--radius-sm:10px;--radius-xs:6px;
-  --shadow:0 2px 16px rgba(10,22,40,.06);
-  --shadow-md:0 8px 32px rgba(10,22,40,.10);
+  /* Geometry */
+  --radius:16px;--radius-sm:10px;--radius-xs:6px;--radius-lg:24px;
+  /* Elevation */
+  --shadow:0 2px 12px rgba(5,13,26,.06),0 1px 3px rgba(5,13,26,.03);
+  --shadow-md:0 8px 32px rgba(5,13,26,.10),0 2px 8px rgba(5,13,26,.05);
+  --shadow-lg:0 20px 60px rgba(5,13,26,.18),0 6px 18px rgba(5,13,26,.08);
+  --shadow-gold:0 4px 24px rgba(201,168,76,.3);
+  /* Easing */
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --premium:cubic-bezier(.16,1,.3,1);
+  --smooth:cubic-bezier(.4,0,.2,1);
 }
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;overflow-x:hidden}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;overflow-x:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+/* ===== KEYFRAMES ===== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.4)}50%{box-shadow:0 0 0 10px rgba(201,168,76,0)}}
+@keyframes stagger-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes countUp{from{opacity:0;transform:translateY(8px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 
 /* ===== SCREENS ===== */
 .screen{display:none}
@@ -61,143 +85,198 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 /* ===== AUTH ===== */
 #screen-auth{
   min-height:100vh;
-  background:radial-gradient(ellipse at 70% 10%,#0f2044 0%,#0a1628 50%,#060d1a 100%);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  position:relative;
-  overflow:hidden;
-  padding:24px 16px;
+  background:radial-gradient(ellipse 110% 70% at 70% -5%,rgba(22,45,94,.85) 0%,transparent 55%),
+             radial-gradient(ellipse 70% 50% at 20% 110%,rgba(201,168,76,.06) 0%,transparent 50%),
+             linear-gradient(180deg,#050d1a 0%,#020810 100%);
+  display:none;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;padding:24px 16px;
 }
 #screen-auth.active{display:flex}
-#screen-auth::before{content:'';position:absolute;top:-150px;right:-150px;width:500px;height:500px;background:radial-gradient(circle,rgba(201,168,76,.14) 0%,transparent 65%);pointer-events:none}
-#screen-auth::after{content:'';position:absolute;bottom:-150px;left:-150px;width:450px;height:450px;background:radial-gradient(circle,rgba(22,45,94,.6) 0%,transparent 60%);pointer-events:none}
-/* subtle diagonal lines */
-#screen-auth .auth-bg-lines{position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(201,168,76,.015) 0,rgba(201,168,76,.015) 1px,transparent 0,transparent 50%);background-size:40px 40px;pointer-events:none}
+#screen-auth::before{content:'';position:absolute;top:-180px;right:-180px;width:560px;height:560px;background:radial-gradient(circle,rgba(201,168,76,.12) 0%,transparent 65%);pointer-events:none}
+#screen-auth::after{content:'';position:absolute;bottom:-100px;left:-100px;width:420px;height:420px;background:radial-gradient(circle,rgba(15,32,68,.8) 0%,transparent 60%);pointer-events:none}
+#screen-auth .auth-bg-lines{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse 100% 100% at 50% 50%,black 20%,transparent 100%);
+  pointer-events:none;
+}
 
-.auth-box{width:100%;max-width:440px;position:relative;z-index:10;animation:fadeUp .5s ease}
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+.auth-box{width:100%;max-width:440px;position:relative;z-index:10;animation:fadeUp .6s var(--premium) both;padding:0 4px}
 
-.auth-logo{display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:32px}
-.auth-logo-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--navy);box-shadow:0 4px 20px rgba(201,168,76,.3)}
-.auth-logo-name{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:white}
+.auth-logo{display:flex;align-items:center;gap:13px;justify-content:center;margin-bottom:36px}
+.auth-logo-icon{
+  width:52px;height:52px;background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--navy);
+  box-shadow:0 0 0 1px rgba(201,168,76,.3),var(--shadow-gold);
+  animation:pulse-gold 3.5s ease-in-out infinite;
+}
+.auth-logo-name{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;color:white;letter-spacing:-.5px}
 .auth-logo-name span{color:var(--gold)}
 
-.auth-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:36px;backdrop-filter:blur(20px)}
-.auth-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:white;text-align:center;margin-bottom:4px}
-.auth-sub{font-size:13px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:28px}
-.auth-tabs{display:flex;background:rgba(255,255,255,.06);border-radius:var(--radius-sm);padding:4px;margin-bottom:24px;gap:4px}
-.auth-tab{flex:1;padding:9px;border:none;background:transparent;color:rgba(255,255,255,.5);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;border-radius:var(--radius-xs);transition:all .2s}
-.auth-tab.active{background:var(--gold);color:var(--navy)}
+.auth-card{
+  background:rgba(8,18,36,.78);border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;padding:36px;
+  backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);
+  box-shadow:0 32px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.auth-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:600;color:white;text-align:center;margin-bottom:4px;letter-spacing:-.3px}
+.auth-sub{font-size:13px;color:rgba(255,255,255,.38);text-align:center;margin-bottom:28px}
+.auth-tabs{display:flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-sm);padding:4px;margin-bottom:24px;gap:4px}
+.auth-tab{flex:1;padding:9px;border:none;background:transparent;color:rgba(255,255,255,.42);cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;border-radius:var(--radius-xs);transition:all .2s var(--premium)}
+.auth-tab.active{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);box-shadow:0 2px 8px rgba(201,168,76,.3)}
 .form-group{margin-bottom:16px}
-.form-label{display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-.form-input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);padding:12px 16px;color:white;font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:all .2s}
-.form-input::placeholder{color:rgba(255,255,255,.25)}
-.form-input:focus{border-color:var(--gold);background:rgba(255,255,255,.1)}
+.form-label{display:block;font-size:11px;font-weight:600;color:rgba(255,255,255,.42);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:7px}
+.form-input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.1);border-radius:var(--radius-sm);padding:13px 16px;color:white;font-family:'Inter',sans-serif;font-size:14px;outline:none;transition:all .2s var(--premium)}
+.form-input::placeholder{color:rgba(255,255,255,.2)}
+.form-input:focus{border-color:rgba(201,168,76,.6);background:rgba(255,255,255,.1);box-shadow:0 0 0 4px rgba(201,168,76,.1)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.btn-auth{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);border:none;border-radius:var(--radius-sm);font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:8px}
-.btn-auth:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(201,168,76,.35)}
-.btn-auth:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.auth-error{background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3);color:#fca5a5;border-radius:var(--radius-xs);padding:10px 14px;font-size:12px;margin-bottom:14px;display:none}
-.auth-success{background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);color:#86efac;border-radius:var(--radius-xs);padding:10px 14px;font-size:12px;margin-bottom:14px;display:none}
-.auth-switch{text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.35)}
-.auth-switch a{color:var(--gold);cursor:pointer;text-decoration:underline}
-.auth-back{display:block;text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,.3);cursor:pointer;text-decoration:none;transition:color .2s}
+.btn-auth{
+  width:100%;padding:15px;
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);
+  color:var(--navy);border:none;border-radius:var(--radius-sm);
+  font-family:'Inter',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;transition:all .2s var(--premium);margin-top:8px;
+  box-shadow:var(--shadow-gold);letter-spacing:.2px;
+}
+.btn-auth:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(201,168,76,.45);background:linear-gradient(135deg,var(--gold2),var(--gold3))}
+.btn-auth:active{transform:translateY(0)}
+.btn-auth:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none}
+.auth-error{background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.22);color:#fca5a5;border-radius:var(--radius-xs);padding:10px 14px;font-size:12px;margin-bottom:14px;display:none;animation:fadeIn .2s ease}
+.auth-success{background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.22);color:#86efac;border-radius:var(--radius-xs);padding:10px 14px;font-size:12px;margin-bottom:14px;display:none;animation:fadeIn .2s ease}
+.auth-switch{text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.3)}
+.auth-switch a{color:var(--gold);cursor:pointer;text-decoration:none;border-bottom:1px solid rgba(201,168,76,.3)}
+.auth-back{display:block;text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,.25);cursor:pointer;text-decoration:none;transition:color .2s}
 .auth-back:hover{color:rgba(255,255,255,.6)}
 
 /* ===== APP SHELL ===== */
 #screen-app{display:none;flex-direction:row;min-height:100vh}
 #screen-app.active{display:flex}
 
-.sidebar{width:240px;min-height:100vh;background:var(--navy);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto}
-.sidebar-logo{display:flex;align-items:center;gap:10px;padding:20px 20px 16px}
-.sidebar-logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--navy)}
-.sidebar-logo-name{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:white}
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:248px;min-height:100vh;
+  background:linear-gradient(180deg,var(--navy) 0%,#020810 100%);
+  display:flex;flex-direction:column;flex-shrink:0;
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+  border-right:1px solid rgba(255,255,255,.05);
+  box-shadow:4px 0 24px rgba(0,0,0,.28);
+}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.05)}
+.sidebar-logo-icon{
+  width:36px;height:36px;background:linear-gradient(135deg,var(--gold),var(--gold2));
+  border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:var(--navy);
+  box-shadow:0 2px 12px rgba(201,168,76,.28);
+}
+.sidebar-logo-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:white;letter-spacing:-.3px}
 .sidebar-logo-name span{color:var(--gold)}
 
-.sidebar-user{margin:0 12px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-sm);padding:12px}
-.user-name{font-size:13px;font-weight:700;color:white;margin-bottom:2px}
-.user-plan{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gold)}
+.sidebar-user{margin:14px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-sm);padding:12px 14px}
+.user-name{font-size:13px;font-weight:600;color:rgba(255,255,255,.9);margin-bottom:3px}
+.user-plan{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gold)}
 
-.sidebar-nav{flex:1;padding:0 8px}
-.nav-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);padding:12px 12px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-xs);color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500}
-.nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9)}
-.nav-item.active{background:rgba(201,168,76,.15);color:var(--gold);font-weight:700}
+.sidebar-nav{flex:1;padding:4px 8px}
+.nav-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:rgba(255,255,255,.2);padding:14px 12px 6px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:var(--radius-xs);color:rgba(255,255,255,.48);
+  cursor:pointer;transition:all .18s var(--premium);margin-bottom:2px;
+  border:none;background:transparent;width:100%;text-align:left;
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:500;position:relative;
+}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.nav-item.active{background:rgba(201,168,76,.1);color:var(--gold);font-weight:600;border:1px solid rgba(201,168,76,.15)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:22%;bottom:22%;width:3px;background:linear-gradient(180deg,var(--gold),var(--gold2));border-radius:0 3px 3px 0}
 .nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
 .nav-badge{margin-left:auto;background:var(--gold);color:var(--navy);border-radius:999px;font-size:9px;font-weight:800;padding:2px 7px}
 
-.sidebar-bottom{padding:12px}
-.lf-status-sidebar{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);border-radius:var(--radius-xs);padding:10px 12px;margin-bottom:10px}
-.lf-row{display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.6);margin-bottom:3px}
+.sidebar-bottom{padding:12px;border-top:1px solid rgba(255,255,255,.05)}
+.lf-status-sidebar{background:rgba(22,163,74,.07);border:1px solid rgba(22,163,74,.15);border-radius:var(--radius-xs);padding:10px 12px;margin-bottom:10px}
+.lf-row{display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:3px}
 .lf-row:last-child{margin-bottom:0}
 .lf-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.dot-green{background:#4ade80;animation:blink 3s infinite}
+.dot-green{background:#4ade80;animation:blink 3s infinite;box-shadow:0 0 4px rgba(74,222,128,.4)}
 .dot-gold{background:var(--gold);animation:blink 1s infinite}
 .dot-red{background:var(--danger)}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .lang-row{display:flex;gap:6px;margin-bottom:8px}
-.lang-btn-sm{padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:999px;color:rgba(255,255,255,.4);cursor:pointer;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;transition:all .2s}
+.lang-btn-sm{padding:5px 10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:999px;color:rgba(255,255,255,.35);cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;transition:all .2s}
 .lang-btn-sm.active{background:var(--gold);color:var(--navy);border-color:var(--gold)}
-.btn-logout{width:100%;padding:9px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-xs);color:rgba(255,255,255,.5);cursor:pointer;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;transition:all .2s;text-align:left;display:flex;align-items:center;gap:8px}
-.btn-logout:hover{background:rgba(220,38,38,.1);border-color:rgba(220,38,38,.2);color:#fca5a5}
+.btn-logout{width:100%;padding:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-xs);color:rgba(255,255,255,.4);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;transition:all .2s;text-align:left;display:flex;align-items:center;gap:8px}
+.btn-logout:hover{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.15);color:#fca5a5}
 
 /* ===== MAIN ===== */
-.app-main{flex:1;min-height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-.page-header{background:var(--card);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.page-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--navy)}
-.page-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.app-main{flex:1;min-height:100vh;overflow-y:auto;display:flex;flex-direction:column;background:var(--bg)}
+.page-header{
+  background:white;border-bottom:1px solid var(--border);
+  padding:18px 28px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50;
+  box-shadow:0 1px 0 var(--border),0 4px 16px rgba(5,13,26,.04);
+}
+.page-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--navy);letter-spacing:-.3px}
+.page-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .page-content{padding:24px 28px;flex:1}
 
 /* ===== BUTTONS ===== */
-.btn{padding:9px 18px;border-radius:var(--radius-xs);border:1.5px solid var(--border2);background:white;color:var(--text);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
-.btn:hover{border-color:var(--navy)}
+.btn{padding:9px 18px;border-radius:var(--radius-xs);border:1.5px solid var(--border2);background:white;color:var(--text);cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;transition:all .18s var(--premium);display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover{border-color:var(--navy);box-shadow:var(--shadow)}
+.btn:active{transform:scale(.98)}
 .btn-navy{background:var(--navy);color:white;border-color:var(--navy)}
-.btn-navy:hover{background:var(--navy2)}
-.btn-gold{background:var(--gold);color:var(--navy);border-color:var(--gold);font-weight:700}
-.btn-gold:hover{background:var(--gold2)}
+.btn-navy:hover{background:var(--navy3);border-color:var(--navy3)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);border-color:transparent;font-weight:700;box-shadow:0 2px 10px rgba(201,168,76,.22)}
+.btn-gold:hover{background:linear-gradient(135deg,var(--gold2),var(--gold3));box-shadow:0 6px 24px rgba(201,168,76,.38);transform:translateY(-1px)}
 .btn-sm{padding:6px 12px;font-size:12px}
 .btn-danger{background:var(--danger-light);color:var(--danger);border-color:rgba(220,38,38,.2)}
 
 /* ===== DASHBOARD ===== */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);transition:all .2s}
-.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
-.stat-icon{font-size:22px;margin-bottom:10px}
-.stat-value{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:var(--navy);line-height:1}
-.stat-label{font-size:11px;color:var(--muted);margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{
+  background:white;border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px;box-shadow:var(--shadow);transition:all .25s var(--premium);
+  position:relative;overflow:hidden;
+  animation:stagger-in .5s var(--premium) both;
+}
+.stat-card:nth-child(1){animation-delay:.06s}
+.stat-card:nth-child(2){animation-delay:.12s}
+.stat-card:nth-child(3){animation-delay:.18s}
+.stat-card:nth-child(4){animation-delay:.24s}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold2));transform:scaleX(0);transform-origin:left;transition:transform .3s var(--premium)}
+.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-3px)}
+.stat-card:hover::before{transform:scaleX(1)}
+.stat-icon{font-size:24px;margin-bottom:12px}
+.stat-value{font-family:'Playfair Display',serif;font-size:34px;font-weight:600;color:var(--navy);line-height:1;letter-spacing:-.5px;animation:countUp .5s var(--premium) both;animation-delay:.3s}
+.stat-label{font-size:11px;color:var(--muted);margin-top:5px;font-weight:600;text-transform:uppercase;letter-spacing:.9px}
 .two-col{display:grid;grid-template-columns:1fr 360px;gap:16px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
-.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.card-title{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--navy)}
-.card-body{padding:20px}
+.card{background:white;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);transition:box-shadow .2s var(--premium)}
+.card:hover{box-shadow:var(--shadow-md)}
+.card-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--navy);letter-spacing:-.2px}
+.card-body{padding:20px 22px}
 
 /* ===== ANALYZE ===== */
-.lf-bar{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--navy),var(--navy2));border:1px solid rgba(201,168,76,.15);border-radius:var(--radius-sm);padding:10px 16px;margin-bottom:18px;font-size:12px}
-.lf-bar-text{color:rgba(255,255,255,.8);font-weight:600;flex:1}
-.lf-bar-sub{font-size:10px;color:rgba(255,255,255,.35)}
+.lf-bar{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--navy3) 0%,var(--navy2) 100%);border:1px solid rgba(201,168,76,.18);border-radius:var(--radius-sm);padding:12px 18px;margin-bottom:20px;font-size:12px;box-shadow:0 4px 20px rgba(5,13,26,.18)}
+.lf-bar-text{color:rgba(255,255,255,.85);font-weight:600;flex:1}
+.lf-bar-sub{font-size:10px;color:rgba(255,255,255,.3)}
 
-.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:32px;text-align:center;background:var(--card);transition:all .3s;cursor:pointer;position:relative;overflow:hidden;margin-bottom:16px}
-.upload-zone:hover,.upload-zone.drag-over{border-color:var(--gold);background:var(--gold-light)}
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:40px;text-align:center;background:white;transition:all .3s var(--premium);cursor:pointer;position:relative;overflow:hidden;margin-bottom:18px}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--gold);background:rgba(201,168,76,.04);box-shadow:0 0 0 4px rgba(201,168,76,.08)}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
 
-.analyze-form{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:18px;box-shadow:var(--shadow)}
+.analyze-form{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:18px;box-shadow:var(--shadow)}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:16px}
-.fg label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px}
-.fg input,.fg select,.fg textarea{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-xs);padding:10px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;outline:none;transition:all .15s}
-.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold);background:white}
-.fg textarea{min-height:80px;resize:vertical;line-height:1.6}
+.fg label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.9px;display:block;margin-bottom:6px}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-xs);padding:11px 14px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:all .18s var(--premium)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold);background:white;box-shadow:0 0 0 4px rgba(201,168,76,.1)}
+.fg textarea{min-height:80px;resize:vertical;line-height:1.65}
 
 /* ===== LOADING ===== */
-.loading-wrap{background:var(--navy);border-radius:var(--radius);padding:32px;text-align:center}
-@keyframes spin{to{transform:rotate(360deg)}}
-.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
-.loading-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:rgba(255,255,255,.85);font-style:italic;margin-bottom:20px}
+.loading-wrap{background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);border-radius:var(--radius);padding:40px;text-align:center;box-shadow:0 8px 40px rgba(5,13,26,.35)}
+.spinner{width:42px;height:42px;border:3px solid rgba(255,255,255,.08);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 20px}
+.loading-title{font-family:'Playfair Display',serif;font-size:22px;color:rgba(255,255,255,.9);font-style:italic;margin-bottom:24px;letter-spacing:-.2px}
 .loading-steps{max-width:380px;margin:0 auto 20px}
-.loading-step{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:var(--radius-xs);font-size:12px;color:rgba(255,255,255,.3);transition:all .3s;margin-bottom:3px}
-.loading-step.active{color:var(--gold);background:rgba(201,168,76,.08);font-weight:700}
+.loading-step{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--radius-xs);font-size:12px;color:rgba(255,255,255,.25);transition:all .3s var(--premium);margin-bottom:3px;font-family:'Inter',sans-serif}
+.loading-step.active{color:var(--gold);background:rgba(201,168,76,.1);font-weight:600;box-shadow:0 0 0 1px rgba(201,168,76,.15)}
 .loading-step.done{color:rgba(255,255,255,.5)}
 .step-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.2);flex-shrink:0}
 .loading-step.active .step-dot{background:var(--gold)}
@@ -209,82 +288,94 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .feed-item.done{color:rgba(255,255,255,.35)}
 
 /* ===== RESULTS ===== */
-.result-header{background:var(--navy);border-radius:var(--radius);padding:20px 24px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-.result-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:white;font-style:italic}
-.result-complete{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(22,163,74,.2);color:#4ade80;border:1px solid rgba(22,163,74,.3)}
-.result-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px}
-.rtab{padding:10px 20px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
-.rtab.active{color:var(--navy);border-bottom-color:var(--gold)}
-.section{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.result-header{background:linear-gradient(135deg,var(--navy) 0%,#102040 50%,var(--navy3) 100%);border-radius:var(--radius);padding:22px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;box-shadow:0 6px 32px rgba(5,13,26,.3),inset 0 1px 0 rgba(255,255,255,.06)}
+.result-name{font-family:'Playfair Display',serif;font-size:24px;font-weight:600;color:white;font-style:italic;letter-spacing:-.3px}
+.result-complete{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(22,163,74,.18);color:#4ade80;border:1px solid rgba(22,163,74,.3);letter-spacing:.4px}
+.result-tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:22px;gap:2px}
+.rtab{padding:11px 22px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s var(--premium);letter-spacing:.1px}
+.rtab:hover{color:var(--navy);background:rgba(201,168,76,.04)}
+.rtab.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:700}
+.section{margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--border)}
 .section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-.section-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.section-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:10px}
 .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
-.section-text{font-size:14px;line-height:1.85;color:var(--text)}
-.risk-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.risk-score{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;line-height:1}
+.section-text{font-size:14px;line-height:1.9;color:var(--text)}
+/* ===== CIRCULAR RISK GAUGE ===== */
+.risk-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:8px 0}
+.risk-gauge-container{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.risk-gauge-svg{width:120px;height:120px;transform:rotate(-90deg)}
+.risk-gauge-track{fill:none;stroke:var(--border);stroke-width:9}
+.risk-gauge-fill{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset 1.6s var(--premium)}
+.risk-gauge-center{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.risk-score{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;line-height:1;letter-spacing:-1px}
 .risk-score.low{color:var(--success)}.risk-score.medium{color:var(--warn)}.risk-score.high{color:var(--danger)}
+.risk-gauge-pct{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .risk-bar-outer{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px}
 .risk-bar-fill{height:100%;border-radius:4px;transition:width 1.5s ease}
 .risk-low{background:linear-gradient(90deg,var(--success),#4ade80)}
 .risk-medium{background:linear-gradient(90deg,var(--warn),#fbbf24)}
 .risk-high{background:linear-gradient(90deg,var(--danger),#f87171)}
-.pts-list{list-style:none;display:flex;flex-direction:column;gap:8px}
-.pt{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border);font-size:13px;line-height:1.6}
+.pts-list{list-style:none;display:flex;flex-direction:column;gap:9px}
+.pt{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border);font-size:13px;line-height:1.65;transition:all .18s var(--premium)}
+.pt:hover{border-color:rgba(201,168,76,.35);background:var(--gold-light);transform:translateX(2px)}
 .pt-good{border-left:3px solid var(--success)}.pt-warn{border-left:3px solid var(--warn)}.pt-bad{border-left:3px solid var(--danger)}.pt-info{border-left:3px solid var(--navy3)}
-.law-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;border-left:3px solid #0055a4}
-.law-article{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px}
-.law-text{font-size:13px;color:var(--muted);line-height:1.65}
-.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;margin-top:6px}
+.law-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:10px;border-left:4px solid #0055a4;transition:all .18s var(--premium)}
+.law-card:hover{box-shadow:var(--shadow);border-left-color:var(--gold)}
+.law-article{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:5px;font-family:'Inter',sans-serif}
+.law-text{font-size:13px;color:var(--muted);line-height:1.7}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;margin-top:7px;letter-spacing:.3px}
 .chip-lf{background:rgba(0,85,164,.08);border:1px solid rgba(0,85,164,.2);color:#0055a4}
 .chip-jud{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:#8a6200}
-.juris-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;border-left:3px solid var(--gold)}
-.juris-ref{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px}
-.juris-text{font-size:13px;color:var(--muted);line-height:1.65}
-.strategy-card{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:var(--radius);padding:20px;margin-bottom:12px;color:white;position:relative;overflow:hidden}
-.strategy-n{font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:300;color:rgba(201,168,76,.2);position:absolute;top:8px;right:18px;line-height:1}
-.strategy-title{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:6px}
-.strategy-text{font-size:13px;color:rgba(255,255,255,.8);line-height:1.75}
-.say-box{background:var(--gold-light);border-radius:var(--radius-sm);border-left:4px solid var(--gold);padding:18px;font-size:14px;line-height:1.9}
+.juris-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:10px;border-left:4px solid var(--gold);transition:all .18s var(--premium)}
+.juris-card:hover{box-shadow:var(--shadow)}
+.juris-ref{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:5px}
+.juris-text{font-size:13px;color:var(--muted);line-height:1.7}
+.strategy-card{background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);border-radius:var(--radius);padding:22px;margin-bottom:14px;color:white;position:relative;overflow:hidden;box-shadow:0 4px 24px rgba(5,13,26,.3)}
+.strategy-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.5}
+.strategy-n{font-family:'Playfair Display',serif;font-size:56px;font-weight:700;color:rgba(201,168,76,.12);position:absolute;top:4px;right:18px;line-height:1}
+.strategy-title{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:8px;letter-spacing:.3px}
+.strategy-text{font-size:13px;color:rgba(255,255,255,.82);line-height:1.8}
+.say-box{background:var(--gold-light);border-radius:var(--radius-sm);border-left:4px solid var(--gold);padding:20px;font-size:14px;line-height:1.9;color:var(--navy2)}
 .risk-pill{padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800}
 .risk-pill-h{background:var(--danger-light);color:var(--danger)}
 .risk-pill-m{background:var(--warn-light);color:var(--warn)}
 .risk-pill-l{background:var(--success-light);color:var(--success)}
 
 /* ===== CASES ===== */
-.case-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all .15s}
+.case-row{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:all .18s var(--premium)}
 .case-row:last-child{border-bottom:none}
-.case-row:hover{opacity:.8}
-.case-row-icon{width:36px;height:36px;border-radius:var(--radius-xs);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;border:1px solid var(--border)}
+.case-row:hover{background:var(--bg);border-radius:var(--radius-xs);padding-left:6px;border-color:transparent}
+.case-row-icon{width:38px;height:38px;border-radius:var(--radius-xs);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;border:1px solid var(--border);transition:all .18s}
+.case-row:hover .case-row-icon{background:var(--gold-light);border-color:rgba(201,168,76,.3)}
 .case-row-info{flex:1;min-width:0}
-.case-row-name{font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.case-row-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.case-row-name{font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;letter-spacing:-.1px}
+.case-row-meta{font-size:11px;color:var(--muted);margin-top:3px}
 
 /* ===== CLIENT CARD ===== */
-.client-card{background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1px solid #bae6fd;border-radius:var(--radius);padding:24px}
-.client-sec-title{font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-.client-sec-text{font-size:14px;color:#0c4a6e;line-height:1.8;background:white;border-radius:var(--radius-xs);padding:12px 14px;border:1px solid #bae6fd;margin-bottom:14px}
+.client-card{background:linear-gradient(135deg,#f0f9ff 0%,#e8f4ff 100%);border:1px solid #bae6fd;border-radius:var(--radius);padding:26px}
+.client-sec-title{font-size:10px;font-weight:800;color:#0369a1;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px}
+.client-sec-text{font-size:14px;color:#0c4a6e;line-height:1.85;background:white;border-radius:var(--radius-xs);padding:14px 16px;border:1px solid #bae6fd;margin-bottom:16px;font-family:'Inter',sans-serif}
 
 /* ===== EMPTY ===== */
-.empty{text-align:center;padding:60px 20px}
-.empty-icon{font-size:48px;margin-bottom:16px;opacity:.3}
-.empty-title{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--muted);margin-bottom:8px}
-.empty-sub{font-size:13px;color:var(--light)}
+.empty{text-align:center;padding:70px 20px}
+.empty-icon{font-size:52px;margin-bottom:18px;opacity:.25}
+.empty-title{font-family:'Playfair Display',serif;font-size:24px;color:var(--muted);margin-bottom:10px;font-weight:600;letter-spacing:-.3px}
+.empty-sub{font-size:13px;color:var(--light);line-height:1.7}
 
 /* ===== TOAST ===== */
-.toast-container{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:8px}
-.toast{background:var(--navy);color:white;border-radius:var(--radius-xs);padding:12px 16px;font-size:13px;font-weight:600;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:10px;max-width:300px;animation:slideIn .3s ease}
-@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.toast-container{position:fixed;bottom:28px;right:28px;z-index:2000;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--navy);color:white;border-radius:var(--radius-sm);padding:13px 18px;font-size:13px;font-weight:600;box-shadow:0 12px 40px rgba(5,13,26,.4),0 2px 8px rgba(5,13,26,.2);display:flex;align-items:center;gap:10px;max-width:320px;animation:slideIn .3s var(--premium)}
 .toast-s{border-left:3px solid var(--success)}.toast-e{border-left:3px solid var(--danger)}.toast-i{border-left:3px solid var(--gold)}
 
 /* ===== SUB INFO ===== */
-.sub-box{background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:var(--radius);padding:20px;color:white;margin-bottom:14px}
-.sub-plan{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold);margin-bottom:4px}
-.sub-exp{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:16px}
-.sub-feat{font-size:12px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sub-box{background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%);border-radius:var(--radius);padding:22px;color:white;margin-bottom:16px;box-shadow:0 4px 20px rgba(5,13,26,.2)}
+.sub-plan{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold);margin-bottom:5px;font-weight:600;letter-spacing:-.2px}
+.sub-exp{font-size:12px;color:rgba(255,255,255,.38);margin-bottom:18px}
+.sub-feat{font-size:12px;color:rgba(255,255,255,.72);display:flex;align-items:center;gap:8px;margin-bottom:7px}
 .sub-feat::before{content:'✓';color:var(--gold);font-weight:800}
-.usage-label{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5);margin-bottom:5px;margin-top:12px}
-.usage-track{height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden}
-.usage-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px}
+.usage-label{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.42);margin-bottom:6px;margin-top:14px}
+.usage-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.usage-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:3px}
 
 @media(max-width:768px){
   .sidebar{display:none}
@@ -293,105 +384,39 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
   .page-content{padding:16px}
   .page-header{padding:12px 16px}
   .form-grid{grid-template-columns:1fr}
-  .result-header{padding:16px;flex-direction:column;align-items:flex-start}
+  .result-header{padding:16px 18px;flex-direction:column;align-items:flex-start}
   .result-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .rtab{white-space:nowrap;padding:10px 14px}
-  .auth-card{padding:24px 20px}
+  .rtab{white-space:nowrap;padding:10px 14px;font-size:12px}
+  .auth-card{padding:26px 20px}
+  .risk-gauge-svg{width:100px;height:100px}
+  .risk-score{font-size:30px}
 }
 /* Mobile nav */
-.mobile-nav-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.08);padding:12px 16px;align-items:center;justify-content:space-between}
-.mobile-nav-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:white}
+.mobile-nav-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:linear-gradient(180deg,var(--navy) 0%,#020810 100%);border-bottom:1px solid rgba(255,255,255,.07);padding:12px 16px;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.mobile-nav-logo{font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:white;letter-spacing:-.3px}
 .mobile-nav-logo span{color:var(--gold)}
-.mobile-hamburger{width:36px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;border:none;background:rgba(255,255,255,.06);border-radius:8px}
+.mobile-hamburger{width:36px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;border:none;background:rgba(255,255,255,.06);border-radius:8px;transition:background .2s}
+.mobile-hamburger:hover{background:rgba(255,255,255,.1)}
 .mobile-hamburger span{display:block;width:18px;height:2px;background:rgba(255,255,255,.7);border-radius:2px;transition:all .2s}
-.mobile-drawer{display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,.5)}
-.mobile-drawer-inner{position:absolute;top:0;left:0;width:260px;height:100%;background:var(--navy);padding:70px 12px 24px;overflow-y:auto;box-shadow:4px 0 20px rgba(0,0,0,.4)}
+.mobile-drawer{display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,.55)}
+.mobile-drawer-inner{position:absolute;top:0;left:0;width:268px;height:100%;background:linear-gradient(180deg,var(--navy) 0%,#020810 100%);padding:72px 12px 24px;overflow-y:auto;box-shadow:8px 0 32px rgba(0,0,0,.5)}
 .mobile-drawer.open{display:block}
 @media(max-width:768px){
   .mobile-nav-bar{display:flex}
   #screen-app.active{padding-top:56px}
 }
 
-/* ===== PREMIUM ENHANCEMENTS ===== */
-@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.4)}50%{box-shadow:0 0 0 8px rgba(201,168,76,0)}}
-@keyframes stagger-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-
-/* Stat cards */
-.stat-card{position:relative;overflow:hidden;animation:stagger-in .4s ease both}
-.stat-card:nth-child(1){animation-delay:.05s}
-.stat-card:nth-child(2){animation-delay:.1s}
-.stat-card:nth-child(3){animation-delay:.15s}
-.stat-card:nth-child(4){animation-delay:.2s}
-.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity .3s}
-.stat-card:hover::after{opacity:.6}
-
-/* Buttons */
-.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 2px 12px rgba(201,168,76,.25);transition:all .2s}
-.btn-gold:hover{background:linear-gradient(135deg,#d4b45a,#f0d87a);box-shadow:0 6px 24px rgba(201,168,76,.4);transform:translateY(-1px)}
-.btn-gold:active{transform:translateY(0);box-shadow:0 2px 8px rgba(201,168,76,.2)}
-.btn-navy:hover{background:#162d5e}
-.btn:active{transform:scale(.98)}
-
-/* Cards */
-.card{transition:box-shadow .2s,transform .2s}
-.card:hover{box-shadow:var(--shadow-md)}
-.page-header{background:linear-gradient(to right,white,#fafbfd);backdrop-filter:blur(8px)}
-
-/* Auth */
-.auth-card{box-shadow:0 24px 64px rgba(0,0,0,.45)}
-.auth-box{padding:0 16px}
-
-/* Strategy cards */
-.strategy-card{box-shadow:0 4px 24px rgba(10,22,40,.35)}
-.strategy-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.5}
-
-/* Result header */
-.result-header{background:linear-gradient(135deg,var(--navy),#102040,#162d5e);box-shadow:0 4px 24px rgba(10,22,40,.25)}
-
-/* Sections */
-.section-label{font-size:11px}
-.pt{transition:all .18s}
-.pt:hover{border-color:rgba(201,168,76,.4);background:var(--gold-light);transform:translateX(2px)}
-.law-card{transition:all .15s}.law-card:hover{border-left-color:var(--gold);box-shadow:var(--shadow)}
-.juris-card{transition:all .15s}.juris-card:hover{box-shadow:var(--shadow)}
-
-/* Cases */
-.case-row:hover{background:var(--bg);border-radius:var(--radius-xs);padding-left:4px}
-
-/* Auth logo */
-.auth-logo-icon{box-shadow:0 8px 28px rgba(201,168,76,.45)}
-
-/* Sidebar nav items */
-.nav-item{transition:all .18s;position:relative}
-.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;background:var(--gold);border-radius:0 2px 2px 0}
-
-/* Input focus ring */
-.fg input:focus,.fg select:focus,.fg textarea:focus{box-shadow:0 0 0 3px rgba(201,168,76,.12)}
-.form-input:focus{box-shadow:0 0 0 3px rgba(201,168,76,.2)}
-
-/* Result tabs */
-.rtab{transition:all .2s;position:relative}
-.rtab:hover{color:var(--navy);background:rgba(201,168,76,.04)}
-
-/* Loading wrap */
-.loading-wrap{background:linear-gradient(135deg,var(--navy),var(--navy2));box-shadow:0 8px 40px rgba(10,22,40,.3)}
-
-/* Sub box */
-.sub-box{background:linear-gradient(135deg,var(--navy),var(--navy2));box-shadow:0 4px 20px rgba(10,22,40,.2)}
-
-/* Card header subtle gradient */
-.card-header{background:linear-gradient(to right,white,#fafbff)}
-
 /* ===== GUIDED TOUR ===== */
-.tour-lens{position:fixed;border:2px solid var(--gold);border-radius:10px;box-shadow:0 0 0 9999px rgba(10,22,40,.78),0 0 0 4px rgba(201,168,76,.15);z-index:10001;pointer-events:none;transition:top .4s cubic-bezier(.4,0,.2,1),left .4s cubic-bezier(.4,0,.2,1),width .4s cubic-bezier(.4,0,.2,1),height .4s cubic-bezier(.4,0,.2,1)}
-.tour-tooltip{position:fixed;z-index:10002;max-width:300px;min-width:220px;background:var(--navy2);border:1.5px solid rgba(201,168,76,.45);border-radius:14px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:fadeUp .3s ease}
-.tour-step-num{font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
-.tour-step-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:white;margin-bottom:6px}
-.tour-step-text{font-size:13px;color:rgba(255,255,255,.65);line-height:1.6;margin-bottom:14px}
+.tour-lens{position:fixed;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(5,13,26,.82),0 0 0 5px rgba(201,168,76,.18);z-index:10001;pointer-events:none;transition:top .4s var(--smooth),left .4s var(--smooth),width .4s var(--smooth),height .4s var(--smooth)}
+.tour-tooltip{position:fixed;z-index:10002;max-width:300px;min-width:230px;background:rgba(10,22,40,.95);border:1.5px solid rgba(201,168,76,.45);border-radius:16px;padding:20px 22px;box-shadow:0 20px 60px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.07);animation:fadeUp .3s var(--premium);backdrop-filter:blur(20px)}
+.tour-step-num{font-size:10px;font-weight:800;color:var(--gold);text-transform:uppercase;letter-spacing:1.8px;margin-bottom:7px}
+.tour-step-title{font-family:'Playfair Display',serif;font-size:19px;font-weight:600;color:white;margin-bottom:7px;letter-spacing:-.2px}
+.tour-step-text{font-size:13px;color:rgba(255,255,255,.62);line-height:1.65;margin-bottom:16px}
 .tour-step-btns{display:flex;gap:8px}
-.tour-next-btn{flex:1;padding:10px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:8px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
-.tour-skip-btn{padding:10px 14px;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.4);font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer}
+.tour-next-btn{flex:1;padding:11px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:9px;color:var(--navy);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .18s var(--premium);box-shadow:0 2px 12px rgba(201,168,76,.3)}
+.tour-next-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,.4)}
+.tour-skip-btn{padding:11px 14px;background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:9px;color:rgba(255,255,255,.35);font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;transition:all .18s}
+.tour-skip-btn:hover{border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.6)}
 </style>
 </head>
 <body>
@@ -493,7 +518,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
       <div class="form-group">
         <label class="form-label">Vous êtes</label>
-        <select class="form-input" id="regUserType" onchange="toggleBarField()" style="appearance:auto;-webkit-appearance:auto;background:rgba(255,255,255,.07);color:white;border:1.5px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);padding:12px 16px;font-family:'Outfit',sans-serif;font-size:14px;outline:none;width:100%;cursor:pointer">
+        <select class="form-input" id="regUserType" onchange="toggleBarField()" style="appearance:auto;-webkit-appearance:auto;background:rgba(255,255,255,.07);color:white;border:1.5px solid rgba(255,255,255,.12);border-radius:var(--radius-sm);padding:12px 16px;font-family:'Inter',sans-serif;font-size:14px;outline:none;width:100%;cursor:pointer">
           <option value="lawyer" style="background:#0f2044;color:white">⚖️ Avocat / Juriste</option>
           <option value="civilian" style="background:#0f2044;color:white">👤 Particulier / Justiciable</option>
         </select>
@@ -566,7 +591,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
       <div class="auth-error" id="clientError"></div>
       <div class="form-group" style="margin-top:8px">
         <label class="form-label">Votre code d'accès</label>
-        <input class="form-input" id="clientCode" placeholder="KM-XXXX" maxlength="7" style="text-transform:uppercase;text-align:center;font-size:22px;font-family:'Cormorant Garamond',serif;letter-spacing:6px" oninput="this.value=this.value.toUpperCase()">
+        <input class="form-input" id="clientCode" placeholder="KM-XXXX" maxlength="7" style="text-transform:uppercase;text-align:center;font-size:22px;font-family:'Playfair Display',serif;letter-spacing:6px" oninput="this.value=this.value.toUpperCase()">
       </div>
       <button class="btn-auth" id="clientBtn" onclick="doClientAccess()">Accéder à mon dossier</button>
       <a class="auth-back" onclick="switchAuthTab('login')" style="cursor:pointer">← Retour à la connexion</a>
@@ -591,7 +616,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
         <span style="font-size:11px;color:rgba(255,255,255,.25)">ou</span>
         <div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div>
       </div>
-      <button onclick="switchAuthTab('client')" style="width:100%;padding:13px;background:rgba(201,168,76,.08);border:1.5px solid rgba(201,168,76,.3);border-radius:10px;color:var(--gold);font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='rgba(201,168,76,.15)'" onmouseout="this.style.background='rgba(201,168,76,.08)'">
+      <button onclick="switchAuthTab('client')" style="width:100%;padding:13px;background:rgba(201,168,76,.08);border:1.5px solid rgba(201,168,76,.3);border-radius:10px;color:var(--gold);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px" onmouseover="this.style.background='rgba(201,168,76,.15)'" onmouseout="this.style.background='rgba(201,168,76,.08)'">
         👤 Vous êtes client ? Accéder à votre dossier
       </button>
     </div>
@@ -1052,7 +1077,7 @@ async function doClientAccess() {
 
     document.getElementById('clientViewContent').innerHTML = `
     <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px;backdrop-filter:blur(20px);color:white">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold);margin-bottom:4px">${c.client_name||'Votre dossier'}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--gold);margin-bottom:4px">${c.client_name||'Votre dossier'}</div>
       <div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:20px">${c.charge||''} ${c.court?'· '+c.court:''} ${c.hearing_date?'· Audience: '+new Date(c.hearing_date).toLocaleDateString('fr-FR'):''}</div>
 
       ${c.risk_level ? '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;margin-bottom:20px;' + (c.risk_level==='high'?'background:rgba(220,38,38,.15);color:#fca5a5;border:1px solid rgba(220,38,38,.3)':c.risk_level==='medium'?'background:rgba(217,119,6,.15);color:#fcd34d;border:1px solid rgba(217,119,6,.3)':'background:rgba(22,163,74,.15);color:#86efac;border:1px solid rgba(22,163,74,.3)') + '">' + (c.risk_level==='high'?'⚠️ Situation sérieuse':c.risk_level==='medium'?'⚡ Situation modérée':'✓ Situation favorable') + '</div>' : ''}
@@ -1113,11 +1138,11 @@ async function generateClientCode(caseId) {
       codeBox.innerHTML = `
         <div style="background:rgba(255,255,255,.05);border-radius:10px;padding:16px;text-align:center;margin-top:14px;border:1px solid rgba(201,168,76,.2)">
           <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px">Code généré pour <strong style="color:var(--gold)">${cf.name||'votre client'}</strong></div>
-          <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--gold);letter-spacing:8px;margin-bottom:8px">${data.code}</div>
+          <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:600;color:var(--gold);letter-spacing:8px;margin-bottom:8px">${data.code}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:14px">Valable 30 jours · Le client entre ce code sur app.kasemind.fr</div>
           <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-            <button onclick="navigator.clipboard.writeText('${data.code}').then(()=>toast('Code copié !','s'))" style="padding:8px 16px;background:var(--gold);border:none;border-radius:6px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer">📋 Copier</button>
-            <button onclick="navigator.clipboard.writeText('Bonjour, voici votre code d\\'accès KaseMind pour consulter votre dossier : ${data.code} — Rendez-vous sur app.kasemind.fr').then(()=>toast('Message copié !','s'))" style="padding:8px 16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">💬 Copier message WhatsApp</button>
+            <button onclick="navigator.clipboard.writeText('${data.code}').then(()=>toast('Code copié !','s'))" style="padding:8px 16px;background:var(--gold);border:none;border-radius:6px;color:var(--navy);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">📋 Copier</button>
+            <button onclick="navigator.clipboard.writeText('Bonjour, voici votre code d\\'accès KaseMind pour consulter votre dossier : ${data.code} — Rendez-vous sur app.kasemind.fr').then(()=>toast('Message copié !','s'))" style="padding:8px 16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">💬 Copier message WhatsApp</button>
           </div>
         </div>`;
     }
@@ -1383,13 +1408,13 @@ function renderAnalyze(container) {
     <div class="upload-zone" id="uploadZone">
       <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.tiff,.txt" onchange="handleFiles(this.files)">
       <div style="font-size:36px;margin-bottom:10px;opacity:.5">📎</div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;margin-bottom:4px">${lang==='fr'?'Déposez vos documents du dossier':'Drop your case documents'}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;margin-bottom:4px">${lang==='fr'?'Déposez vos documents du dossier':'Drop your case documents'}</div>
       <div style="font-size:12px;color:var(--muted)">PDF · Word (.docx) · Images (JPG, PNG) · TXT · Jusqu'à 20 fichiers</div>
     </div>
     <div id="fileList" style="margin-bottom:12px"></div>
 
     <div class="analyze-form">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;margin-bottom:16px">${lang==='fr'?'Informations du dossier':'Case information'}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;margin-bottom:16px">${lang==='fr'?'Informations du dossier':'Case information'}</div>
       <div class="form-grid">
         <div class="fg"><label>${lang==='fr'?'Nom du client':'Client name'}</label><input id="cfName" value="${cf.name}" placeholder="${lang==='fr'?'Jean Martin':'John Martin'}" oninput="cf.name=this.value"></div>
         <div class="fg"><label>${lang==='fr'?'Charge / Infraction':'Charge / Offense'}</label><input id="cfCharge" value="${cf.charge}" placeholder="Ex: Vol aggravé Art. 311-4 CP" oninput="cf.charge=this.value"></div>
@@ -1421,7 +1446,7 @@ function renderAnalyze(container) {
             <label>${lang==='fr'?'Peine maximale':'Max sentence'}</label>
             <input id="newChargeMax" placeholder="${lang==='fr'?'Ex: 5 ans + 75 000€':'E.g. 5 years + €75,000'}" style="width:100%">
           </div>
-          <button onclick="addCharge()" style="padding:10px 14px;background:var(--navy);border:1.5px solid var(--navy);border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;height:42px">+ Ajouter</button>
+          <button onclick="addCharge()" style="padding:10px 14px;background:var(--navy);border:1.5px solid var(--navy);border-radius:8px;color:white;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;height:42px">+ Ajouter</button>
         </div>
       </div>
 
@@ -1442,7 +1467,7 @@ function renderAnalyze(container) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
           <div class="fg">
             <label>${lang==='fr'?'Casier judiciaire':'Criminal record'}</label>
-            <select id="cfCasier" oninput="cf.profile.casier=this.value" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;outline:none">
+            <select id="cfCasier" oninput="cf.profile.casier=this.value" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none">
               <option value="">${lang==='fr'?'Sélectionner...':'Select...'}</option>
               <option value="vierge">${lang==='fr'?'Casier vierge (B1 vide)':'Clean record'}</option>
               <option value="mention_effacee" >${lang==='fr'?'Mentions effacées':'Mentions cleared'}</option>
@@ -1453,7 +1478,7 @@ function renderAnalyze(container) {
           </div>
           <div class="fg">
             <label>${lang==='fr'?'Sursis en cours':'Active suspended sentence'}</label>
-            <select id="cfSursis" oninput="cf.profile.sursis=this.value" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;outline:none">
+            <select id="cfSursis" oninput="cf.profile.sursis=this.value" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none">
               <option value="" >${lang==='fr'?'Sélectionner...':'Select...'}</option>
               <option value="aucun" >${lang==='fr'?'Aucun sursis':'No suspended sentence'}</option>
               <option value="sme" >SME ${lang==='fr'?'en cours':'in progress'}</option>
@@ -1488,10 +1513,10 @@ function renderAnalyze(container) {
   if (result && !isCivilian()) {
     document.getElementById('resultActions').style.display = 'flex';
     setTimeout(() => {
-      const fill = document.getElementById('riskFill');
-      if (fill) {
+      const gf = document.getElementById('riskGaugeFill');
+      if (gf) {
         const score = result.risk_score || (result.risk_level==='high'?75:result.risk_level==='medium'?45:20);
-        fill.style.width = score + '%';
+        gf.style.strokeDashoffset = String(289 * (1 - score/100));
       }
     }, 100);
   }
@@ -1734,7 +1759,7 @@ function renderCRPCResult(r, container) {
           <div style="font-size:13px;color:rgba(255,255,255,.75);margin-top:8px;line-height:1.6">${r.verdict_explanation || ''}</div>
         </div>
         <div style="text-align:center;flex-shrink:0">
-          <div style="font-size:36px;font-weight:800;color:${scoreColor};font-family:'Cormorant Garamond',serif">${r.overall_score || '—'}</div>
+          <div style="font-size:36px;font-weight:800;color:${scoreColor};font-family:'Playfair Display',serif">${r.overall_score || '—'}</div>
           <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px">/ 100</div>
           <div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">qualité offre</div>
         </div>
@@ -1801,7 +1826,7 @@ function renderCRPCResult(r, container) {
       ${r.what_to_tell_client ? `
       <div style="background:var(--navy);border-radius:10px;padding:14px;margin-bottom:12px">
         <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">💬 Ce que vous dites à votre client</div>
-        <div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.7;font-family:'Cormorant Garamond',serif">${r.what_to_tell_client}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.8);line-height:1.7;font-family:'Playfair Display',serif">${r.what_to_tell_client}</div>
       </div>` : ''}
 
       ${r.deadline_warning ? `
@@ -2069,8 +2094,8 @@ ${lfCtx}${judCtx}${documentContext}`;
     document.getElementById('resultActions').style.display = 'flex';
     content.innerHTML = '<div style="padding:24px">' + disclaimer + renderResultHTML(result) + '</div>';
     setTimeout(() => {
-      const fill = document.getElementById('riskFill');
-      if (fill) fill.style.width = (result.risk_score || 45) + '%';
+      const gf = document.getElementById('riskGaugeFill');
+      if (gf) gf.style.strokeDashoffset = String(289 * (1 - (result.risk_score || 45)/100));
     }, 100);
   }
 }
@@ -2120,6 +2145,8 @@ function renderResultHTML(r) {
   const score = r.risk_score || (r.risk_level==='high'?75:r.risk_level==='medium'?45:20);
   const rc = r.risk_level==='high'?'high':r.risk_level==='medium'?'medium':'low';
   const rLabel = rc==='high'?t('riskH'):rc==='medium'?t('riskM'):t('riskL');
+  const gaugeColor = rc==='high'?'#dc2626':rc==='medium'?'#d97706':'#16a34a';
+  const circ = 289;
 
   return `
   <div class="result-header">
@@ -2141,11 +2168,20 @@ function renderResultHTML(r) {
     <div class="section">
       <div class="section-label">${lang==='fr'?'Niveau de risque':'Risk level'}</div>
       <div class="risk-wrap">
-        <div class="risk-score ${rc}">${score}<span style="font-size:16px">%</span></div>
+        <div class="risk-gauge-container">
+          <svg class="risk-gauge-svg" viewBox="0 0 110 110">
+            <circle class="risk-gauge-track" cx="55" cy="55" r="46"/>
+            <circle class="risk-gauge-fill" cx="55" cy="55" r="46"
+              stroke="${gaugeColor}" stroke-dasharray="${circ}" stroke-dashoffset="${circ}" id="riskGaugeFill"/>
+          </svg>
+          <div class="risk-gauge-center">
+            <div class="risk-score ${rc}">${score}</div>
+            <div class="risk-gauge-pct">%</div>
+          </div>
+        </div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:var(--${rc==='high'?'danger':rc==='medium'?'warn':'success'})">${rLabel}</div>
-          <div style="font-size:12px;color:var(--muted);margin:4px 0">${r.risk_explanation||''}</div>
-          <div class="risk-bar-outer"><div class="risk-bar-fill risk-${rc}" style="width:0" id="riskFill"></div></div>
+          <div style="font-size:15px;font-weight:700;color:var(--${rc==='high'?'danger':rc==='medium'?'warn':'success'});margin-bottom:6px">${rLabel}</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.65">${r.risk_explanation||''}</div>
         </div>
       </div>
     </div>
@@ -2169,24 +2205,24 @@ function renderResultHTML(r) {
     <div style="margin-top:20px">
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px">⚡ Actions IA avancées</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:14px">
-        <button onclick="runMotionAction('crossExam',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">🎯 Contre-interrogatoire</button>
-        <button onclick="runMotionAction('motion',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">📝 Rédiger la plaidoirie</button>
-        <button onclick="runMotionAction('contradictions',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">⚡ Détecter contradictions</button>
-        <button onclick="runMotionAction('timeline',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">📅 Timeline procédurale</button>
-        <button onclick="openCRPC()" style="padding:10px 14px;background:rgba(201,168,76,.12);border:1.5px solid rgba(201,168,76,.35);border-radius:8px;color:var(--gold);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-align:left" onmouseover="this.style.background='rgba(201,168,76,.2)'" onmouseout="this.style.background='rgba(201,168,76,.12)'">📋 Analyser une CRPC</button>
+        <button onclick="runMotionAction('crossExam',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">🎯 Contre-interrogatoire</button>
+        <button onclick="runMotionAction('motion',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">📝 Rédiger la plaidoirie</button>
+        <button onclick="runMotionAction('contradictions',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">⚡ Détecter contradictions</button>
+        <button onclick="runMotionAction('timeline',window._currentCaseId)" style="padding:10px 14px;background:var(--navy);border:none;border-radius:8px;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;text-align:left" onmouseover="this.style.background='var(--navy2)'" onmouseout="this.style.background='var(--navy)'">📅 Timeline procédurale</button>
+        <button onclick="openCRPC()" style="padding:10px 14px;background:rgba(201,168,76,.12);border:1.5px solid rgba(201,168,76,.35);border-radius:8px;color:var(--gold);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-align:left" onmouseover="this.style.background='rgba(201,168,76,.2)'" onmouseout="this.style.background='rgba(201,168,76,.12)'">📋 Analyser une CRPC</button>
       </div>
       <div id="motionResult"></div>
 
       <div id="crpcPanel" style="display:none;margin-top:16px;background:var(--card);border:1.5px solid rgba(201,168,76,.3);border-radius:12px;padding:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--gold)">Analyser une CRPC</div>
+            <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:var(--gold)">Analyser une CRPC</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">Comparution sur Reconnaissance Préalable de Culpabilité</div>
           </div>
           <button onclick="document.getElementById('crpcPanel').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px">✕</button>
         </div>
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Coller ou saisir les termes de la proposition CRPC</div>
-        <textarea id="crpcText" placeholder="Collez ici le texte de la proposition CRPC — peines proposées, chefs couverts, obligations, délai de réponse..." style="width:100%;min-height:140px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:Outfit,sans-serif;font-size:13px;resize:vertical;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        <textarea id="crpcText" placeholder="Collez ici le texte de la proposition CRPC — peines proposées, chefs couverts, obligations, délai de réponse..." style="width:100%;min-height:140px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;resize:vertical;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"></textarea>
         
         <div style="margin:10px 0 6px">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">— ou —</div>
@@ -2201,11 +2237,11 @@ function renderResultHTML(r) {
         <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:12px 0 8px">Chefs couverts par cette CRPC (facultatif)</div>
         <div id="crpcChargesList" style="margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:14px;align-items:end">
-          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Chef d'infraction</label><input id="crpcChargeLabel" placeholder="Ex: Vol aggravé Art. 311-4 CP" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:Outfit,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
-          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Peine proposée</label><input id="crpcChargePenalty" placeholder="Ex: 8 mois sursis" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:Outfit,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
-          <button onclick="addCRPCCharge()" style="padding:10px 14px;background:var(--navy);border:1px solid var(--navy);border-radius:8px;color:white;font-family:Outfit,sans-serif;font-size:12px;font-weight:700;cursor:pointer;height:42px">+ Chef</button>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Chef d'infraction</label><input id="crpcChargeLabel" placeholder="Ex: Vol aggravé Art. 311-4 CP" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
+          <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Peine proposée</label><input id="crpcChargePenalty" placeholder="Ex: 8 mois sursis" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:Inter,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>
+          <button onclick="addCRPCCharge()" style="padding:10px 14px;background:var(--navy);border:1px solid var(--navy);border-radius:8px;color:white;font-family:Inter,sans-serif;font-size:12px;font-weight:700;cursor:pointer;height:42px">+ Chef</button>
         </div>
-        <button onclick="runCRPC()" style="width:100%;padding:13px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:Outfit,sans-serif;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.5px">⚖️ Analyser cette CRPC</button>
+        <button onclick="runCRPC()" style="width:100%;padding:13px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:Inter,sans-serif;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.5px">⚖️ Analyser cette CRPC</button>
         <div id="crpcResult" style="margin-top:16px"></div>
       </div>
     </div>
@@ -2213,7 +2249,7 @@ function renderResultHTML(r) {
     <div id="reanalysis-section" style="margin-top:16px;background:linear-gradient(135deg,var(--navy),var(--navy2));border-radius:12px;padding:20px;border:1px solid rgba(201,168,76,.2)">
       <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px">🔄 Nouvelles preuves — Mettre à jour le dossier</div>
       <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:12px">${lang==='fr'?`Ajoutez de nouvelles informations ou documents pour relancer l'analyse complète`:'Add new information or documents to re-run the full analysis'}</div>
-      <textarea id="newEvidence" placeholder="Ex: Nouveau témoin qui contredit le PV. Certificat médical obtenu. La victime a retiré sa plainte..." style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;color:white;font-family:'Outfit',sans-serif;font-size:13px;outline:none;min-height:70px;resize:vertical;margin-bottom:10px;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"></textarea>
+      <textarea id="newEvidence" placeholder="Ex: Nouveau témoin qui contredit le PV. Certificat médical obtenu. La victime a retiré sa plainte..." style="width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;color:white;font-family:'Inter',sans-serif;font-size:13px;outline:none;min-height:70px;resize:vertical;margin-bottom:10px;box-sizing:border-box" onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='rgba(255,255,255,.12)'"></textarea>
       <div style="margin-bottom:10px">
         <div onclick="document.getElementById('reFileInput').click()" style="border:1.5px dashed rgba(255,255,255,.2);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:rgba(255,255,255,.4);transition:all .2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='rgba(255,255,255,.2)'">
           📎 ${lang==='fr'?'Ajouter de nouveaux documents (PDF, Word, images)':'Add new documents (PDF, Word, images)'}
@@ -2221,11 +2257,11 @@ function renderResultHTML(r) {
         <input type="file" id="reFileInput" multiple accept=".pdf,.docx,.doc,.txt,.jpg,.jpeg,.png" style="display:none" onchange="handleReFiles(this.files)">
         <div id="reFileList" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px"></div>
       </div>
-      <button onclick="doReAnalysis()" style="padding:10px 20px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🔄 ${lang==='fr'?'Re-analyser':'Re-analyze'}</button>
+      <button onclick="doReAnalysis()" style="padding:10px 20px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🔄 ${lang==='fr'?'Re-analyser':'Re-analyze'}</button>
     </div>
 
     <div style="margin-top:12px">
-      <button id="clientCodeBtn" onclick="generateClientCode(window._currentCaseId)" style="width:100%;padding:12px;background:rgba(201,168,76,.08);border:1.5px solid rgba(201,168,76,.3);border-radius:8px;color:var(--gold);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer" onmouseover="this.style.background='rgba(201,168,76,.15)'" onmouseout="this.style.background='rgba(201,168,76,.08)'">
+      <button id="clientCodeBtn" onclick="generateClientCode(window._currentCaseId)" style="width:100%;padding:12px;background:rgba(201,168,76,.08);border:1.5px solid rgba(201,168,76,.3);border-radius:8px;color:var(--gold);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer" onmouseover="this.style.background='rgba(201,168,76,.15)'" onmouseout="this.style.background='rgba(201,168,76,.08)'">
         🔑 ${lang==='fr'?`Générer code client pour ${cf.name||'ce client'}`:'Generate client access code'}
       </button>
       <div id="clientCodeDisplay"></div>
@@ -2234,7 +2270,7 @@ function renderResultHTML(r) {
 
   <div id="rv-c" style="display:none">
     <div class="client-card">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#0c4a6e;margin-bottom:4px">${cf.name||'Votre dossier'}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:#0c4a6e;margin-bottom:4px">${cf.name||'Votre dossier'}</div>
       <div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:1px;margin-bottom:20px">${lang==='fr'?'Préparé par votre avocat via KaseMind':'Prepared by your lawyer via KaseMind'}</div>
       ${r.client_explanation ? Object.entries({
         [lang==='fr'?'📋 Ce qui se passe':'📋 What is happening']: r.client_explanation.what_happened,
@@ -2351,7 +2387,7 @@ function renderCases(container) {
     c.innerHTML = `
       <div class="empty"><div class="empty-icon">📁</div><div class="empty-title">${t('noCases')}</div><p class="empty-sub">${t('noCasesSub')}</p></div>
       <div style="text-align:center;margin-top:16px">
-        <button onclick="loadAndShowArchives()" style="padding:8px 20px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">📦 ${lang==='fr'?'Voir les dossiers archivés':'View archived cases'}</button>
+        <button onclick="loadAndShowArchives()" style="padding:8px 20px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">📦 ${lang==='fr'?'Voir les dossiers archivés':'View archived cases'}</button>
       </div>
       <div id="archiveContainer"></div>`;
     return;
@@ -2363,7 +2399,7 @@ function renderCases(container) {
     const row = document.createElement('div');
     row.className = 'card';
     row.style = 'margin-bottom:10px;padding:16px 20px;cursor:pointer;transition:all .2s';
-    row.innerHTML = `<div style="display:flex;align-items:center;gap:12px"><div style="font-size:20px">⚖️</div><div style="flex:1"><div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600">${cs.client_name||cs.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${cs.charge||'—'} · ${cs.court||'—'} · ${cs.hearing_date||cs.date||'—'}</div></div>${rp}<button onclick="deleteCase('${cs.id||''}',event)" style="padding:5px 10px;background:var(--danger-light);border:1px solid rgba(220,38,38,.2);border-radius:6px;color:var(--danger);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:8px">🗑️</button></div>`;
+    row.innerHTML = `<div style="display:flex;align-items:center;gap:12px"><div style="font-size:20px">⚖️</div><div style="flex:1"><div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:600">${cs.client_name||cs.name}</div><div style="font-size:12px;color:var(--muted);margin-top:2px">${cs.charge||'—'} · ${cs.court||'—'} · ${cs.hearing_date||cs.date||'—'}</div></div>${rp}<button onclick="deleteCase('${cs.id||''}',event)" style="padding:5px 10px;background:var(--danger-light);border:1px solid rgba(220,38,38,.2);border-radius:6px;color:var(--danger);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;margin-left:8px">🗑️</button></div>`;
     row.onmouseover = () => row.style.borderColor = 'var(--gold)';
     row.onmouseout = () => row.style.borderColor = 'var(--border)';
     row.onclick = () => {
@@ -2399,7 +2435,7 @@ function renderCases(container) {
   // Archives button
   const archiveBtn = document.createElement('div');
   archiveBtn.style = 'text-align:center;margin-top:20px';
-  archiveBtn.innerHTML = `<button onclick="loadAndShowArchives()" style="padding:8px 20px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">📦 ${lang==='fr'?'Voir les dossiers archivés':'View archived cases'}</button>`;
+  archiveBtn.innerHTML = `<button onclick="loadAndShowArchives()" style="padding:8px 20px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">📦 ${lang==='fr'?'Voir les dossiers archivés':'View archived cases'}</button>`;
   c.appendChild(archiveBtn);
 
   // Archive container
@@ -2434,10 +2470,10 @@ async function loadAndShowArchives() {
           <div class="card" style="margin-bottom:8px;padding:14px 18px;opacity:.7;display:flex;align-items:center;gap:12px">
             <div style="font-size:18px">📁</div>
             <div style="flex:1">
-              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--muted)">${cs.client_name||'—'}</div>
+              <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--muted)">${cs.client_name||'—'}</div>
               <div style="font-size:11px;color:var(--light);margin-top:2px">${cs.charge||'—'} · ${cs.court||'—'}</div>
             </div>
-            <button onclick="reopenCase('${cs.id}',event)" style="padding:6px 14px;background:var(--success-light);border:1px solid rgba(22,163,74,.2);border-radius:6px;color:var(--success);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">
+            <button onclick="reopenCase('${cs.id}',event)" style="padding:6px 14px;background:var(--success-light);border:1px solid rgba(22,163,74,.2);border-radius:6px;color:var(--success);font-family:'Inter',sans-serif;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0">
               🔓 ${lang==='fr'?'Rouvrir':'Reopen'}
             </button>
           </div>
@@ -2575,13 +2611,13 @@ function renderTimeline(container) {
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-              <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600">${c.client_name||c.name||'—'}</div>
+              <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600">${c.client_name||c.name||'—'}</div>
               <div style="background:${urgencyBg};color:${urgencyColor};font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px">${label}</div>
             </div>
             <div style="font-size:12px;color:var(--muted)">${c.charge||'—'} · ${c.court||'—'}</div>
           </div>
           <div style="text-align:right">
-            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:${urgencyColor}">${hDate.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</div>
+            <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:${urgencyColor}">${hDate.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}</div>
             <button class="btn btn-sm" style="margin-top:6px" onclick="openCaseForReanalysis('${c.id||''}','${(c.client_name||'').replace(/'/g,"\\'")}','${(c.charge||'').replace(/'/g,"\\'")}','${(c.court||'').replace(/'/g,"\\'")}','${c.hearing_date||''}')">
               📋 Ouvrir le dossier
             </button>
@@ -2761,7 +2797,7 @@ function renderMotionResult(action, r, container) {
     container.innerHTML = `
     <div style="margin-top:16px">
       <div class="section-label">📝 ${r.motion_type||'Plaidoirie'} — ${r.estimated_duration||''}</div>
-      <div style="background:var(--gold-light);border-radius:10px;padding:20px;border-left:4px solid var(--gold);font-size:14px;line-height:2;white-space:pre-wrap;font-family:'Cormorant Garamond',serif">${r.full_text||''}</div>
+      <div style="background:var(--gold-light);border-radius:10px;padding:20px;border-left:4px solid var(--gold);font-size:14px;line-height:2;white-space:pre-wrap;font-family:'Playfair Display',serif">${r.full_text||''}</div>
       ${r.delivery_notes?.length?`
         <div style="margin-top:14px;background:var(--bg);border-radius:8px;padding:12px 16px">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Conseils de prononciation</div>
@@ -3048,17 +3084,17 @@ function showOnboardingTour() {
       <div style="background:var(--navy2);border:1.5px solid rgba(201,168,76,.3);border-radius:20px;width:100%;max-width:440px;margin:20px;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:fadeUp .3s ease;overflow:hidden">
         <div style="background:linear-gradient(135deg,#0f2044,#162d5e);padding:32px 32px 24px;text-align:center">
           <div style="font-size:52px;margin-bottom:12px">${s.icon}</div>
-          <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:white;margin-bottom:8px">${s.title}</div>
+          <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:600;color:white;margin-bottom:8px">${s.title}</div>
           <div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.7">${s.body}</div>
         </div>
         <div style="padding:20px 32px 28px">
           <div style="display:flex;gap:6px;justify-content:center;margin-bottom:24px">
             ${steps.map((_,i) => `<div style="width:${i===step?24:8}px;height:8px;border-radius:4px;background:${i===step?'var(--gold)':'rgba(255,255,255,.15)'};transition:all .3s"></div>`).join('')}
           </div>
-          <button onclick="window._onboardingNext()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,.3)">
+          <button onclick="window._onboardingNext()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:var(--navy);font-family:'Inter',sans-serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,.3)">
             ${s.cta}
           </button>
-          <button onclick="window._onboardingSkip()" style="width:100%;padding:10px;background:transparent;border:none;color:rgba(255,255,255,.3);font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer;margin-top:8px">
+          <button onclick="window._onboardingSkip()" style="width:100%;padding:10px;background:transparent;border:none;color:rgba(255,255,255,.3);font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;margin-top:8px">
             Passer l'introduction
           </button>
         </div>
@@ -3289,13 +3325,13 @@ function showPaywall(container) {
     <div style="display:flex;align-items:center;justify-content:center;min-height:60vh">
       <div style="text-align:center;max-width:420px;padding:40px">
         <div style="font-size:48px;margin-bottom:16px">⏰</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;margin-bottom:12px">Votre essai gratuit est terminé</div>
+        <div style="font-family:'Playfair Display',serif;font-size:32px;font-weight:600;margin-bottom:12px">Votre essai gratuit est terminé</div>
         <div style="font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.7">Vos dossiers sont conservés. Continuez avec le plan Solo pour un accès illimité.</div>
         <div style="background:var(--card);border:1.5px solid rgba(201,168,76,.4);border-radius:14px;padding:28px;text-align:center;margin-bottom:20px">
           <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px">Plan Solo Avocat</div>
-          <div style="font-family:'Cormorant Garamond',serif;font-size:44px;font-weight:700;color:white">€99<span style="font-size:16px;color:var(--muted);font-weight:400">/mois</span></div>
+          <div style="font-family:'Playfair Display',serif;font-size:44px;font-weight:700;color:white">€99<span style="font-size:16px;color:var(--muted);font-weight:400">/mois</span></div>
           <div style="font-size:12px;color:var(--muted);margin:10px 0 20px">Analyses illimitées · Tous les outils · Annulable à tout moment</div>
-          <button onclick="startCheckout('solo')" style="width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;cursor:pointer">
+          <button onclick="startCheckout('solo')" style="width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;color:var(--navy);font-family:'Inter',sans-serif;font-size:15px;font-weight:800;cursor:pointer">
             S'abonner maintenant
           </button>
         </div>
@@ -3322,7 +3358,7 @@ function showCivilianPaywall(container, caseId) {
           <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px">
             ✨ Analyse complète prête
           </div>
-          <div style="font-size:30px;font-weight:600;font-family:'Cormorant Garamond',serif;color:white;margin-bottom:8px">Votre dossier a été analysé</div>
+          <div style="font-size:30px;font-weight:600;font-family:'Playfair Display',serif;color:white;margin-bottom:8px">Votre dossier a été analysé</div>
           <div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.6">KaseMind a évalué votre situation juridique.<br>Débloquez le rapport complet ci-dessous.</div>
         </div>
 
@@ -3385,9 +3421,9 @@ function showCivilianPaywall(container, caseId) {
           <!-- CTA -->
           <div style="background:linear-gradient(135deg,rgba(201,168,76,.1),rgba(201,168,76,.04));border:1.5px solid rgba(201,168,76,.35);border-radius:12px;padding:20px;text-align:center">
             <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Accès complet — 1 dossier</div>
-            <div style="font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:700;color:white;line-height:1">€49</div>
+            <div style="font-family:'Playfair Display',serif;font-size:48px;font-weight:700;color:white;line-height:1">€49</div>
             <div style="font-size:12px;color:rgba(255,255,255,.4);margin:6px 0 18px">Paiement unique · Accès permanent · Sans abonnement</div>
-            <button onclick="startCheckout('single_case')" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:var(--navy);font-family:'Outfit',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:10px;box-shadow:0 4px 20px rgba(201,168,76,.35);transition:all .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+            <button onclick="startCheckout('single_case')" style="width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:10px;color:var(--navy);font-family:'Inter',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:10px;box-shadow:0 4px 20px rgba(201,168,76,.35);transition:all .2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
               Débloquer mon analyse complète — €49 →
             </button>
             <div style="font-size:11px;color:rgba(255,255,255,.3)">🔐 Paiement sécurisé Stripe · Données hébergées en Europe</div>
@@ -3458,8 +3494,8 @@ async function doReAnalysis() {
     if (analyzeContent) {
       analyzeContent.innerHTML = renderResultHTML(result);
       setTimeout(() => {
-        const fill = document.getElementById('riskFill');
-        if (fill) fill.style.width = (result.risk_score || 45) + '%';
+        const gf = document.getElementById('riskGaugeFill');
+        if (gf) gf.style.strokeDashoffset = String(289 * (1 - (result.risk_score || 45)/100));
       }, 100);
     }
   } catch(e) {
@@ -3589,18 +3625,18 @@ function showRatingPrompt() {
     <div style="background:white;border-radius:16px 16px 16px 16px;padding:24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:slideUp .3s ease">
       <div style="text-align:center;margin-bottom:16px">
         <div style="font-size:28px;margin-bottom:8px">⭐</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:#0a1628">KaseMind vous est utile ?</div>
+        <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:600;color:#0a1628">KaseMind vous est utile ?</div>
         <div style="font-size:13px;color:#64748b;margin-top:4px">Votre avis aide d'autres avocats à découvrir l'outil</div>
       </div>
       <div style="display:flex;justify-content:center;gap:8px;margin-bottom:20px" id="starRow">
         ${[1,2,3,4,5].map(function(n){return '<span onclick="rateApp('+n+')" style="font-size:32px;cursor:pointer;transition:transform .15s;filter:grayscale(1)" onmouseover="hoverStar('+n+')" onmouseout="unhoverStar()" id="star'+n+'">⭐</span>';}).join('')}
       </div>
       <div id="ratingFeedback" style="display:none;margin-bottom:16px">
-        <textarea id="ratingComment" placeholder="Optionnel — partagez votre expérience..." style="width:100%;border:1.5px solid #e2e8f4;border-radius:8px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13px;resize:none;min-height:70px;outline:none;box-sizing:border-box;color:#0a1628"></textarea>
+        <textarea id="ratingComment" placeholder="Optionnel — partagez votre expérience..." style="width:100%;border:1.5px solid #e2e8f4;border-radius:8px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:13px;resize:none;min-height:70px;outline:none;box-sizing:border-box;color:#0a1628"></textarea>
       </div>
       <div style="display:flex;gap:10px">
-        <button onclick="submitRating()" id="submitRatingBtn" style="flex:1;padding:11px;background:#c9a84c;border:none;border-radius:8px;color:#0a1628;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Envoyer</button>
-        <button onclick="dismissRating()" style="padding:11px 16px;background:transparent;border:1px solid #e2e8f4;border-radius:8px;color:#94a3b8;font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer">Plus tard</button>
+        <button onclick="submitRating()" id="submitRatingBtn" style="flex:1;padding:11px;background:#c9a84c;border:none;border-radius:8px;color:#0a1628;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Envoyer</button>
+        <button onclick="dismissRating()" style="padding:11px 16px;background:transparent;border:1px solid #e2e8f4;border-radius:8px;color:#94a3b8;font-family:'Inter',sans-serif;font-size:12px;cursor:pointer">Plus tard</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -3691,7 +3727,7 @@ function renderChangelog(container) {
     ${changes.map(v => `
       <div style="margin-bottom:28px">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-          <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--navy)">${v.version}</div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--navy)">${v.version}</div>
           <div style="padding:3px 10px;background:${v.color};border-radius:999px;font-size:10px;font-weight:800;color:${v.color === 'var(--gold)' ? 'var(--navy)' : 'white'};text-transform:uppercase;letter-spacing:1px">${v.tag}</div>
           <div style="font-size:12px;color:var(--muted)">${v.date}</div>
         </div>
@@ -3717,8 +3753,8 @@ function renderWelcomeBanner() {
       '<div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.6">Commencez par analyser votre premier dossier en 60 secondes.</div>' +
     '</div>' +
     '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
-      '<button id="welcomeStartBtn" style="padding:10px 22px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:Outfit,sans-serif;font-size:13px;font-weight:700;cursor:pointer">&#128269; Analyser mon premier dossier</button>' +
-      '<button id="welcomeDismissBtn" style="padding:10px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:rgba(255,255,255,.7);font-family:Outfit,sans-serif;font-size:12px;cursor:pointer">Ignorer</button>' +
+      '<button id="welcomeStartBtn" style="padding:10px 22px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:Inter,sans-serif;font-size:13px;font-weight:700;cursor:pointer">&#128269; Analyser mon premier dossier</button>' +
+      '<button id="welcomeDismissBtn" style="padding:10px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:rgba(255,255,255,.7);font-family:Inter,sans-serif;font-size:12px;cursor:pointer">Ignorer</button>' +
     '</div>';
   setTimeout(function() {
     const startBtn = document.getElementById('welcomeStartBtn');
@@ -3774,7 +3810,7 @@ function legalPage(title, sections) {
     '</div>';
   }).join('');
   return '<div style="max-width:720px;margin:0 auto;padding:24px">' +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:28px;font-weight:600;color:white;margin-bottom:4px">' + title + '</div>' +
+    '<div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:600;color:white;margin-bottom:4px">' + title + '</div>' +
     '<div style="font-size:12px;color:var(--muted);margin-bottom:28px">KaseMind — kasemind.fr — Dernière mise à jour: mai 2026</div>' +
     sectionsHTML +
     '<div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:32px;padding-top:16px;border-top:1px solid rgba(255,255,255,.06);text-align:center">' +
