@@ -841,6 +841,13 @@ async function doRegister() {
     errEl.style.display = 'block';
     return;
   }
+  const pwConfirm = document.getElementById('regPwConfirm').value;
+  if (pw !== pwConfirm) {
+    errEl.textContent = 'Les mots de passe ne correspondent pas.';
+    errEl.style.display = 'block';
+    return;
+  }
+
   const cguChecked = document.getElementById('regCGU')?.checked;
   if (!cguChecked) {
     errEl.textContent = 'Veuillez accepter les CGU, CGV et la Politique de confidentialité.';
@@ -861,13 +868,6 @@ async function doRegister() {
       errEl.style.display = 'block';
       return;
     }
-  }
-
-  const pwConfirm = document.getElementById('regPwConfirm').value;
-  if (pw !== pwConfirm) {
-    errEl.textContent = 'Les mots de passe ne correspondent pas.';
-    errEl.style.display = 'block';
-    return;
   }
 
   btn.disabled = true;
